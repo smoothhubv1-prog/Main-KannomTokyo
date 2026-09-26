@@ -5,10 +5,10 @@ local TargetPlaceId = 71793674075007 -- **ให้เปลี่ยนเล�
 if game.PlaceId == TargetPlaceId then
     
     -- ถ้าอยู่ในแมพที่ถูกต้อง ให้สั่งโหลดไฟล์และรันทำงานทันที
-    local Set = "https://gist.githubusercontent.com/smoothhubv1-prog/8ce64aca1769bd8f60f796319d5f4309/raw/5595e36f9461f61d07500f6a7ce002596409e03f/UiKanom.lua"
-    loadstring(game:HttpGet(Set))()
-    local Set1 = "https://gist.githubusercontent.com/smoothhubv1-prog/1a95bdafc457df8f6daf3ca3ff01b37f/raw/9d25e154289d5b86cbc293520fb41d6bd74cb928/Fast%2520Attack%2520Kanom%2520tokyo.lua"
-    loadstring(game:HttpGet(Set1))()
+    local Ui = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Ui.lua"
+    loadstring(game:HttpGet(Ui))()
+    local FastAttack = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Fast%20Attack.lua"
+    loadstring(game:HttpGet(FastAttack))()
     
 else
     -- ถ้าเปิดในแมพอื่น (แมพไม่ถูกต้อง) ให้เตะผู้เล่นออกทันทีพร้อมขึ้นข้อความแจ้ง
