@@ -1,5 +1,5 @@
 -- 1. ระบุไอดีแมพ (PlaceId) ที่คุณต้องการให้สคริปต์นี้ทำงาน
-local TargetPlaceId = 71793674875007 
+local TargetPlaceId = 71793674075007
 
 -- 2. เช็คว่าไอดีแมพปัจจุบันตรงกับที่ตั้งไว้ไหม
 if game.PlaceId == TargetPlaceId then
