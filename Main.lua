@@ -11,6 +11,12 @@ if game.PlaceId == TargetPlaceId then
     loadstring(game:HttpGet(FastAttack))()
     
 else
-    -- ถ้าเปิดในแมพอื่น (แมพไม่ถูกต้อง) ให้เตะผู้เล่นออกทันทีพร้อมขึ้นข้อความแจ้ง
-    game.Players.LocalPlayer:Kick("สคริปต์นี้ใช้ได้เฉพาะ Map | Kanom Tokyo ")
+ -- แสดงกล่องแจ้งเตือนขึ้นที่มุมขวาล่างของหน้าจอเกม
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "SmoothHub Warning!",
+        Text = "SmoothHub สคิปนี้ใช้ได้เฉพาะแมพ Kanom Tokyo",
+        Duration = 5 -- ให้ข้อความโชว์ค้างไว้ 5 วินาที
+    })
 end
+
+
