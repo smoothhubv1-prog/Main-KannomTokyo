@@ -14,3 +14,5 @@ else
      -- ถ้าเปิดผิดแมพ ให้เตะผู้เล่นออกทันที
     game.Players.LocalPlayer:Kick("สคริปต์นี้ใช้ได้เฉพาะ Map | Kanom Tokyo")
 end
+
+
