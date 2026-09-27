@@ -7,8 +7,8 @@ local LocalPlayer = Players.LocalPlayer
 
 _G.SmoothHubConfig = {
     FastAttack = false,
-    AntiAFK = false,
-    AutoFarmLevelGhoul = false ,
+    AntiAFK = true,
+    AutoFarmLevelGhoul = false,
 	AutoFarmLevelCCG = false 
 }
 
