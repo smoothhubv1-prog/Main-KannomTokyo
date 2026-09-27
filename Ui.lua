@@ -22,7 +22,7 @@ ScreenGui.ResetOnSpawn = false
 local SideTogglePill = Instance.new("TextButton")
 SideTogglePill.Name = "SideTogglePill"
 SideTogglePill.Size = UDim2.new(0, 260, 0, 7)
-SideTogglePill.Position = UDim2.new(0.5, -130, 0, -2)
+SideTogglePill.Position = UDim2.new(0.5, -130, 0, -35)
 SideTogglePill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 SideTogglePill.BackgroundTransparency = 0.2
 SideTogglePill.Text = ""
@@ -45,7 +45,7 @@ PillStroke.Parent = SideTogglePill
 SideTogglePill.MouseEnter:Connect(function()
     TweenService:Create(SideTogglePill, TweenInfo.new(0.2), {
         Size = UDim2.new(0, 300, 0, 11),
-        Position = UDim2.new(0.5, -150, 0, -1),
+        Position = UDim2.new(0.5, -150, 0, -35),
         BackgroundTransparency = 0
     }):Play()
 end)
@@ -54,7 +54,7 @@ end)
 SideTogglePill.MouseLeave:Connect(function()
     TweenService:Create(SideTogglePill, TweenInfo.new(0.2), {
         Size = UDim2.new(0, 260, 0, 7),
-        Position = UDim2.new(0.5, -130, 0, -2),
+        Position = UDim2.new(0.5, -130, 0, -35),
         BackgroundTransparency = 0.2
     }):Play()
 end)
