@@ -8,7 +8,8 @@ local LocalPlayer = Players.LocalPlayer
 _G.SmoothHubConfig = {
     FastAttack = false,
     AntiAFK = false,
-    AutoFarm = false 
+    AutoFarmLevelGhoul = false ,
+    AutoFarmLevelCCG = false 
 }
 
 
@@ -592,9 +593,14 @@ SmoothHub:CreateCategory("SETTINGS", 3)
 local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main Farm", 2, "Main | Kanom Tokyo", true)
 MainFarmPage:CreateSection("❄", "Automation Control", "Manage all automated systems and tasks.")
 
-MainFarmPage:CreateToggle("Auto Farm Level", "Automatically quests and defeats monsters to raise your level.", function(state)
-	_G.SmoothHubConfig.AutoFarm = state
+MainFarmPage:CreateToggle("Auto Farm Level | Ghoul  👹", "Automatically completes quests and defeats monsters to raise your level. (Recommended for Ghoul)", function(state)
+	_G.SmoothHubConfig.AutoFarmLevelGhoul= state
 end)
+
+MainFarmPage:CreateToggle("Auto Farm Level | CCG  👔", "Automatically completes quests and defeats monsters to raise your level. (Recommended for CCG)", function(state)
+	_G.SmoothHubConfig.AutoFarmLevelCCG= state
+end)
+
 MainFarmPage:CreateToggle("Fast Attack ", "An extremely fast attack system that hits much quicker than normal.", function(state)
 	_G.SmoothHubConfig.FastAttack = state
 end)
