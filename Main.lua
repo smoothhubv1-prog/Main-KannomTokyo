@@ -16,6 +16,9 @@ if game.PlaceId == TargetPlaceId then
         -- โหลดสคริปต์ Auto Farm Level Ghoul (ตัดเลขขยะสั้นลงแล้ว )
     local AutoFarmLevelGhoul = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Auto%20Farm%20Level%20Ghoul.lua"
     loadstring(game:HttpGet(AutoFarmLevelGhoul))()
+            -- โหลดสคริปต์ Anti AFK (ตัดเลขขยะสั้นลงแล้ว )
+    local AntiAFK = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Anti%20AFK.lua"
+    loadstring(game:HttpGet(AntiAFK))()
     
     
 else
