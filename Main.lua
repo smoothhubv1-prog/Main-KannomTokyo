@@ -7,10 +7,16 @@ if game.PlaceId == TargetPlaceId then
     -- โหลดสคริปต์ UI (ตัดเลขขยะสั้นลงแล้ว)
     local Ui = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Ui.lua"
     loadstring(game:HttpGet(Ui))()
-    
-    -- โหลดสคริปต์ Fast Attack (ตัดเลขขยะสั้นลงแล้ว และแก้เรียกตัวแปร rawUrl1)
+    -- โหลดสคริปต์ Fast Attack (ตัดเลขขยะสั้นลงแล้ว )
     local FastAttack = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Fast%20Attack.lua"
     loadstring(game:HttpGet(FastAttack))()
+    -- โหลดสคริปต์ Auto Farm Level CCG (ตัดเลขขยะสั้นลงแล้ว )
+    local AutoFarmLevelCCG = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Auto%20Farm%20Level%20CCG.lua"
+    loadstring(game:HttpGet(AutoFarmLevelCCG))()
+        -- โหลดสคริปต์ Auto Farm Level Ghoul (ตัดเลขขยะสั้นลงแล้ว )
+    local AutoFarmLevelGhoul = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Auto%20Farm%20Level%20Ghoul.lua"
+    loadstring(game:HttpGet(AutoFarmLevelGhoul))()
+    
     
 else
     -- ถ้าเปิดผิดแมพ ให้เตะผู้เล่นออกทันที
