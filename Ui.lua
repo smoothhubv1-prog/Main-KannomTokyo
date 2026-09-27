@@ -9,7 +9,7 @@ _G.SmoothHubConfig = {
     FastAttack = false,
     AntiAFK = false,
     AutoFarmLevelGhoul = false ,
-    AutoFarmLevelCCG = false 
+	AutoFarmLevelCCG = false 
 }
 
 
