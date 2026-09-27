@@ -6,7 +6,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 _G.SmoothHubConfig = {
-    FastAttack = false,
+    FastAttack = true,
     AntiAFK = true,
     AutoFarmLevelGhoul = false,
 	AutoFarmLevelCCG = false 
