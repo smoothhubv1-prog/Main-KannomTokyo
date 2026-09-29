@@ -546,7 +546,7 @@ task.spawn(function()
                     orbitRadius = 2
                 end
                 
-                local orbitSpeed = 8.3   -- ความเร็วในการหมุนวนรอบตัว
+                local orbitSpeed = 7.6   -- ความเร็วในการหมุนวนรอบตัว
                 local angle = tick() * orbitSpeed
                 
                 -- คำนวณพิกัด X และ Z ให้หมุนรอบตัวมอนสเตอร์
