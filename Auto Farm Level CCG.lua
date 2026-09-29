@@ -640,3 +640,81 @@ task.spawn(function()
         end
     end
 end)
+
+-- ====================================================================
+-- 📊 ระบบอัปเดต Status บน UI สำหรับ CCG (แสดงชื่อมอนสเตอร์ + จำนวนที่เหลือ + จุดเลเวล)
+-- ====================================================================
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            if not _G.SmoothHubConfig.AutoFarmLevelCCG then
+                if _G.CCGStatusObj then
+                    _G.CCGStatusObj.SetText("Off", Color3.fromRGB(150, 165, 170))
+                end
+                return
+            end
+
+            -- 1. ดึงข้อมูลช่วงเลเวลจุดที่กำลังฟาร์ม
+            local questInfo = GetCurrentQuestInfo()
+            local spotRange = "Unknown"
+            
+            if questInfo == QuestConfig.new1 then spotRange = "lvl 1-50"
+            elseif questInfo == QuestConfig.Lv50 then spotRange = "lvl 50-150"
+            elseif questInfo == QuestConfig.Lv150 then spotRange = "lvl 150-250"
+            elseif questInfo == QuestConfig.Lv250 then spotRange = "lvl 250-350"
+            elseif questInfo == QuestConfig.Lv350 then spotRange = "lvl 350-400"
+            elseif questInfo == QuestConfig.Lv400 then spotRange = "lvl 400-450"
+            elseif questInfo == QuestConfig.Lv450 then spotRange = "lvl 450-500"
+            elseif questInfo == QuestConfig.Lv500 then spotRange = "lvl 500-550"
+            elseif questInfo == QuestConfig.Lv550 then spotRange = "lvl 550-600"
+            elseif questInfo == QuestConfig.Lv600 then spotRange = "lvl 600-700"
+            elseif questInfo == QuestConfig.Lv700 then spotRange = "lvl 700-800"
+            elseif questInfo == QuestConfig.Lv800 then spotRange = "lvl 800-900"
+            elseif questInfo == QuestConfig.Lv900 then spotRange = "lvl 900-1000"
+            elseif questInfo == QuestConfig.Lv1000 then spotRange = "lvl 1000-1100"
+            elseif questInfo == QuestConfig.Lv1100 then spotRange = "lvl 1100-1200"
+            end
+
+            -- 2. ดึงชื่อมอนสเตอร์ตัวที่กำลังโจมตีอยู่จริงจาก currentTarget
+            local targetName = "Unknown"
+            if currentTarget and currentTarget.Name then
+                targetName = currentTarget.Name
+            else
+                if questInfo and questInfo.TargetMonsterNames and #questInfo.TargetMonsterNames > 0 then
+                    targetName = questInfo.TargetMonsterNames[1]
+                end
+            end
+
+            -- 3. ดึงจำนวนเควสที่เหลือจากหน้าจอ UI (เช่น 1/6)
+            local countText = "0/6"
+            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            if playerGui then
+                local hud = playerGui:FindFirstChild("HUD")
+                local questUi = hud and hud:FindFirstChild("Quest")
+                if questUi and questUi.Visible then
+                    for _, desc in ipairs(questUi:GetDescendants()) do
+                        if desc:IsA("TextLabel") and desc.Text ~= "" then
+                            local txt = desc.Text
+                            if txt:match("%d+/%d+") then
+                                countText = txt:match("%d+/%d+")
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- 4. อัปเดตแสดงผลบน UI ของ CCG
+            if _G.CCGStatusObj then
+                if not HasActiveQuest() then
+                    _G.CCGStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
+                else
+                    -- รูปแบบแสดงผล: [ชื่อมอนสเตอร์] จำนวนที่เหลือ (ช่วงเลเวลจุดฟาร์ม) เช่น [Human] 1/6 (lvl 1-50)
+                    local displayText = "[" .. targetName .. "] " .. countText .. " (" .. spotRange .. ")"
+                    _G.CCGStatusObj.SetText(displayText, Color3.fromRGB(40, 220, 100))
+                end
+            end
+        end)
+    end
+end)
