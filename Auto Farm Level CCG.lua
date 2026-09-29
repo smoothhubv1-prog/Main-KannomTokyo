@@ -544,7 +544,7 @@ task.spawn(function()
                 local enemyRoot = currentTarget.HumanoidRootPart
                 
                 -- เช็กเลเวล: ถ้าน้อยกว่า 50 ใช้รัศมี 2 แต่ถ้า 50 ขึ้นไปใช้รัศมี 10
-                local orbitRadius = 9
+                local orbitRadius = 8
                 if GetPlayerLevel() < 52 then
                     orbitRadius = 2
                 end
