@@ -541,7 +541,7 @@ task.spawn(function()
                 local enemyRoot = currentTarget.HumanoidRootPart
                 
                 -- เช็กเลเวล: ถ้าน้อยกว่า 50 ใช้รัศมี 2 แต่ถ้า 50 ขึ้นไปใช้รัศมี 12 (ตามโค้ดต้นฉบับ Ghoul)
-                local orbitRadius = 12
+                local orbitRadius = 11
                 if GetPlayerLevel() < 52 then
                     orbitRadius = 2
                 end
