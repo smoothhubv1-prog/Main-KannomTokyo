@@ -213,7 +213,7 @@ pcall(function()
     end
 end)
 
--- ระบบ Auto Rejoin (ดักจับตอนโดนเตะหรือหลุดจากเซิร์ฟเวอร์)
+-- ระบบ Auto Rejoin
 task.spawn(function()
     local coreGui = game:GetService("CoreGui")
     local promptError = coreGui:FindFirstChild("RobloxPromptGui")
@@ -242,7 +242,6 @@ task.spawn(function()
     end)
 end)
 
--- ฟังก์ชันระบบ WalkSpeed, JumpPower, Fly, Noclip และ RGB Outline Character
 local flyConnection
 local bgConnection
 local bvConnection
@@ -306,7 +305,6 @@ local function ToggleFly(state)
     end)
 end
 
--- ลูปคุมความเร็วและความสูงกระโดดแบบเรียลไทม์ (เมื่อเปิดใช้งาน Enable)
 RunService.Stepped:Connect(function()
     pcall(function()
         local character = LocalPlayer.Character
@@ -345,7 +343,6 @@ local function ToggleNoclip(state)
     end)
 end
 
--- ระบบ RGB Outline Character แบบในรูปตัวอย่าง
 local rgbConnection
 local function ToggleRGB(state)
     _G.SmoothHubConfig.EnableRGB = state
@@ -354,7 +351,6 @@ local function ToggleRGB(state)
         if not character then return end
 
         if state then
-            -- สร้าง Highlight ครอบตัวละครเพื่อทำเอฟเฟกต์ Outline
             local highlight = character:FindFirstChild("SmoothHub_RGBHighlight")
             if not highlight then
                 highlight = Instance.new("Highlight")
@@ -381,7 +377,6 @@ local function ToggleRGB(state)
     end)
 end
 
--- คอยจัดการรีเซ็ต RGB เมื่อตัวละครตายหรือเกิดใหม่
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     task.wait(1)
     if _G.SmoothHubConfig.EnableRGB then
@@ -389,7 +384,6 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     end
 end)
 
--- ฟังก์ชันเปิด/ปิด Fast Mode (ลดกราฟฟิกและเอฟเฟค)
 local function ToggleFastMode(state)
     _G.SmoothHubConfig.FastMode = state
     pcall(function()
@@ -422,7 +416,6 @@ local function ToggleFastMode(state)
     end)
 end
 
--- สร้าง Screen แยกสำหรับโหมด Sleep
 local SleepGui = Instance.new("ScreenGui")
 SleepGui.Name = "SmoothHub_SleepGui"
 SleepGui.Parent = CoreGui
@@ -442,7 +435,6 @@ SleepFrame.Text = ""
 SleepFrame.ZIndex = 999999
 SleepFrame.Parent = SleepGui
 
--- 👤 คอนเทนเนอร์แสดงโปรไฟล์ตัวละครในเกม
 local ProfileContainer = Instance.new("Frame")
 ProfileContainer.Name = "ProfileContainer"
 ProfileContainer.Size = UDim2.new(0, 300, 0, 50)
@@ -600,7 +592,6 @@ local function UpdateSleepMode()
     end
 end
 
--- ระบบดับเบิลคลิกเพื่อปิด Sleep Mode
 local lastClickTick = 0
 SleepFrame.MouseButton1Click:Connect(function()
     local currentTick = tick()
@@ -1441,6 +1432,83 @@ function NewPageClass(targetCanvas)
 		return lastContainer
 	end
 
+	-- 📌 ฟังก์ชัน CreateStatus ขยายความกว้างเป็น 320 เพื่อรองรับข้อความยาวๆ เช่น I'm farming at the lvl 600-700 spot right now
+	function PageObj:CreateStatus(statusName, defaultText, statusDesc)
+		local currentStatus = defaultText or "Off"
+		local hasDesc = statusDesc and statusDesc ~= ""
+		
+		local targetContainer = GetLatestContainer()
+		local widgetIndex = #targetContainer:GetChildren() - 1
+
+		local WidgetFrame = Instance.new("Frame")
+		WidgetFrame.Name = statusName .. "_Widget"
+		WidgetFrame.Size = UDim2.new(1, 0, 0, hasDesc and 64 or 50)
+		WidgetFrame.BackgroundTransparency = 1
+		WidgetFrame.BorderSizePixel = 0
+		WidgetFrame.LayoutOrder = widgetIndex
+		WidgetFrame.Parent = targetContainer
+
+		if widgetIndex > 1 then
+			local itemDivider = Instance.new("Frame")
+			itemDivider.Name = "ItemDivider"
+			itemDivider.Size = UDim2.new(1, -28, 0, 1)
+			itemDivider.Position = UDim2.new(0, 14, 0, 0)
+			itemDivider.BackgroundColor3 = Color3.fromRGB(35, 52, 56)
+			itemDivider.BorderSizePixel = 0
+			itemDivider.Parent = WidgetFrame
+		end
+
+		local WidgetTitle = Instance.new("TextLabel")
+		WidgetTitle.Size = UDim2.new(1, -330, 0, hasDesc and 24 or 50) -- ปรับเผื่อพื้นที่ให้ StatusText ยาวๆ
+		WidgetTitle.Position = UDim2.new(0, 14, 0, hasDesc and 11 or 0)
+		WidgetTitle.BackgroundTransparency = 1
+		WidgetTitle.FontFace = SFProMediumFont
+		WidgetTitle.TextSize = 13
+		WidgetTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+		WidgetTitle.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetTitle.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetTitle.Text = statusName
+		WidgetTitle.Parent = WidgetFrame
+
+		if hasDesc then
+			local WidgetDesc = Instance.new("TextLabel")
+			WidgetDesc.Size = UDim2.new(1, -330, 0, 18) -- ปรับเผื่อพื้นที่ให้ StatusText ยาวๆ
+			WidgetDesc.Position = UDim2.new(0, 14, 0, 35)
+			WidgetDesc.BackgroundTransparency = 1
+			WidgetDesc.FontFace = SFProMediumFont
+			WidgetDesc.TextSize = 11
+			WidgetDesc.TextColor3 = Color3.fromRGB(140, 155, 160)
+			WidgetDesc.TextXAlignment = Enum.TextXAlignment.Left
+			WidgetDesc.TextYAlignment = Enum.TextYAlignment.Center
+			WidgetDesc.Text = statusDesc
+			WidgetDesc.Parent = WidgetFrame
+		end
+
+		local StatusText = Instance.new("TextLabel")
+		StatusText.Name = "StatusText"
+		StatusText.Size = UDim2.new(0, 320, 1, 0) -- ขยายความกว้างจาก 100 เป็น 320
+		StatusText.Position = UDim2.new(1, -334, 0, 0) -- ขยับตำแหน่งชิดขวาพอดี
+		StatusText.BackgroundTransparency = 1
+		StatusText.FontFace = SFProMediumFont
+		StatusText.TextSize = 12 -- ปรับขนาดตัวหนังสือเล็กลงเล็กน้อยเพื่อให้แสดงข้อความยาวๆ ได้พอดี
+		StatusText.TextColor3 = Color3.fromRGB(150, 165, 170)
+		StatusText.TextXAlignment = Enum.TextXAlignment.Right
+		StatusText.TextYAlignment = Enum.TextYAlignment.Center
+		StatusText.Text = currentStatus
+		StatusText.Parent = WidgetFrame
+
+		local statusObj = {
+			SetText = function(newText, color)
+				StatusText.Text = newText
+				if color then
+					StatusText.TextColor3 = color
+				end
+			end
+		}
+
+		return statusObj
+	end
+
 	function PageObj:CreateToggle(toggleName, toggleDesc, callback)
 		local callback = callback or function() end
 		
@@ -2251,10 +2319,13 @@ MainFarmPage:CreateSection("❄", "Automation Control", "Manage all automated sy
 MainFarmPage:CreateToggle("Auto Farm Level | Ghoul  👹", "Automatically completes quests and defeats monsters to raise your level. (Recommended for Ghoul)", function(state)
 	_G.SmoothHubConfig.AutoFarmLevelGhoul = state
 end)
+_G.GhoulStatusObj = MainFarmPage:CreateStatus("Ghoul Status", "Idle", "Shows current operational state for Ghoul farm.")
+
 
 MainFarmPage:CreateToggle("Auto Farm Level | CCG  👔", "Automatically completes quests and defeats monsters to raise your level. (Recommended for CCG)", function(state)
 	_G.SmoothHubConfig.AutoFarmLevelCCG = state
 end)
+_G.CCGStatusObj = MainFarmPage:CreateStatus("CCG Status", "Idle", "Shows current operational state for CCG farm.")
 
 MainFarmPage:CreateToggle("Fast Attack ", "An extremely fast attack system that hits much quicker than normal.", function(state)
 	_G.SmoothHubConfig.FastAttack = state
@@ -2281,7 +2352,6 @@ AppearancePage:CreateToggle("Streamer Mode", "Swaps real names for random fake o
 	_G.SmoothHubConfig.StreamerMode = state
 end)
 
--- หน้า Player (เพิ่มหมวดหมู่ Character และปุ่ม Enable RGB)
 local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 21, "Player | Kanom Tokyo", false)
 
 PlayerPage:CreateSection("🏃", "Movement", "Customize your character's speed, jump height, and mobility.")
@@ -2324,7 +2394,6 @@ PlayerPage:CreateToggle("Noclip", "Walk through walls and obstacles easily.", fu
 	ToggleNoclip(state)
 end)
 
--- เพิ่มหมวดหมู่ Character RGB ตามที่ขอ
 PlayerPage:CreateSection("🌈", "(Character) RGB", "Customizes your character with an RGB glowing outline effect.")
 
 PlayerPage:CreateToggle("Enable RGB", "Turns on or off the rainbow RGB glowing outline effect around your character.", function(state)
@@ -2337,6 +2406,7 @@ AdvancedPage:CreateSection("⚙", "System Control", "Advanced settings and anti-
 AdvancedPage:CreateToggle("Anti-AFK System", "Prevent getting kicked after being AFK for 20 minutes.", function(state)
 	_G.SmoothHubConfig.AntiAFK = state
 end)
+
 
 AdvancedPage:CreateToggle("Auto Rejoin", "Automatically reconnect to the server if disconnected or kicked.", function(state)
 	_G.SmoothHubConfig.AutoRejoin = state
