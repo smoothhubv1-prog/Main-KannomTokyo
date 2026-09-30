@@ -1,9 +1,8 @@
 --=============================================
--- Auto Farm Level | Ghoul 👹
+-- Auto Farm Level | Ghoul 👹 (Full Fly & Under-Feet Version)
 --=============================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
@@ -13,8 +12,6 @@ local LocalPlayer = Players.LocalPlayer
 
 -- ประกาศคอนฟิกพื้นฐานเชื่อมกับ UI (ถ้ายังไม่มี)
 _G.SmoothHubConfig = _G.SmoothHubConfig or { AutoFarmLevelGhoul = false }
-
-
 
 task.spawn(function()
     while not _G.GhoulStatusObj do
@@ -105,8 +102,7 @@ local QuestConfig = {
     }
 }
 
-local TWEEN_SPEED = 400
-local currentTween = nil
+local FLY_SPEED = 350
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
@@ -215,14 +211,10 @@ local function HasActiveQuest()
     return false
 end
 
--- จัดการการตายและจับเวลาเกิดใหม่ 2.5 วิ
+-- จัดการการตายและจับเวลาเกิดใหม่
 local function SetupDeathHandler(character)
     isPlayerReadyToFarm = false
     currentTarget = nil
-    if currentTween then
-        currentTween:Cancel()
-        currentTween = nil
-    end
     isDoingQuest = false
     
     task.delay(2.8, function()
@@ -236,10 +228,6 @@ local function SetupDeathHandler(character)
         humanoid.Died:Connect(function()
             isPlayerReadyToFarm = false
             currentTarget = nil
-            if currentTween then
-                currentTween:Cancel()
-                currentTween = nil
-            end
             isDoingQuest = false
         end)
     end
@@ -440,7 +428,7 @@ task.spawn(function()
 end)
 
 -- ====================================================================
--- 📜 ลูปจัดการเควส
+-- 📜 ลูปจัดการเควส (Smooth Fly มาอยู่ใต้จุดรับเควส)
 -- ====================================================================
 task.spawn(function()
     while true do
@@ -461,45 +449,39 @@ task.spawn(function()
                 
                 if not rp then break end
                 
-                if currentTween then
-                    currentTween:Cancel()
-                end
+                -- อยู่ต่ำกว่าจุดเควส 4 หน่วย ป้องกันตัวละครชนกันจนกระเด็น
+                local targetCFrame = questInfo.CFrame - Vector3.new(0, 7, 0)
+                local distance = (targetCFrame.Position - rp.Position).Magnitude
                 
-                local distance = (questInfo.CFrame.Position - rp.Position).Magnitude
-                local tweenTime = distance / TWEEN_SPEED
-                if tweenTime < 0.1 then tweenTime = 0.1 end
-                
-                currentTween = TweenService:Create(
-                    rp,
-                    TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
-                    {CFrame = questInfo.CFrame}
-                )
-                currentTween:Play()
-                
-                pcall(function()
-                    local networkFolder = ReplicatedStorage:FindFirstChild("Network")
-                    local questTarget = ReplicatedStorage:FindFirstChild("Modules") 
-                        and ReplicatedStorage.Modules:FindFirstChild("Client") 
-                        and ReplicatedStorage.Modules.Client:FindFirstChild("TalkNpc") 
-                        and ReplicatedStorage.Modules.Client.TalkNpc:FindFirstChild("Quests") 
-                        and ReplicatedStorage.Modules.Client.TalkNpc.Quests:FindFirstChild(questInfo.QuestPathName) 
-                        and ReplicatedStorage.Modules.Client.TalkNpc.Quests[questInfo.QuestPathName]:FindFirstChild("Quest")
+                if distance > 3 then
+                    local direction = (targetCFrame.Position - rp.Position).Unit
+                    local moveStep = math.min(FLY_SPEED * 0.016, distance)
+                    rp.Velocity = direction * FLY_SPEED
+                    rp.CFrame = rp.CFrame + (direction * moveStep)
+                else
+                    rp.Velocity = Vector3.new(0, 0, 0)
+                    rp.CFrame = targetCFrame
+                    
+                    pcall(function()
+                        local networkFolder = ReplicatedStorage:FindFirstChild("Network")
+                        local questTarget = ReplicatedStorage:FindFirstChild("Modules") 
+                            and ReplicatedStorage.Modules:FindFirstChild("Client") 
+                            and ReplicatedStorage.Modules.Client:FindFirstChild("TalkNpc") 
+                            and ReplicatedStorage.Modules.Client.TalkNpc:FindFirstChild("Quests") 
+                            and ReplicatedStorage.Modules.Client.TalkNpc.Quests[questInfo.QuestPathName] 
+                            and ReplicatedStorage.Modules.Client.TalkNpc.Quests[questInfo.QuestPathName]:FindFirstChild("Quest")
 
-                    if networkFolder and questTarget then
-                        for _, remote in ipairs(networkFolder:GetChildren()) do
-                            if remote:IsA("RemoteEvent") then
-                                remote:FireServer("RequestQuest", questTarget)
+                        if networkFolder and questTarget then
+                            for _, remote in ipairs(networkFolder:GetChildren()) do
+                                if remote:IsA("RemoteEvent") then
+                                    remote:FireServer("RequestQuest", questTarget)
+                                end
                             end
                         end
-                    end
-                end)
+                    end)
+                end
                 
-                task.wait(0.2)
-            end
-            
-            if currentTween then
-                currentTween:Cancel()
-                currentTween = nil
+                task.wait(0.03)
             end
             
             task.wait(0.5)
@@ -509,18 +491,12 @@ task.spawn(function()
 end)
 
 -- ====================================================================
--- 🕹️ ลูปฟาร์มมอนสเตอร์ + ระบบวนรอบตัวมอนสเตอร์ (Orbit แบบปรับตามเลเวล)
+-- 🕹️ ลูปฟาร์มมอนสเตอร์ + ระบบ Fly ไปอยู่ใต้เท้า และหันหน้าเข้าหามอนสเตอร์ทันที
 -- ====================================================================
 task.spawn(function()
     while true do
         task.wait()
-        if not _G.SmoothHubConfig.AutoFarmLevelGhoul then 
-            if currentTween then
-                currentTween:Cancel()
-                currentTween = nil
-            end
-            continue 
-        end
+        if not _G.SmoothHubConfig.AutoFarmLevelGhoul then continue end
         
         if not isPlayerReadyToFarm then
             continue
@@ -533,10 +509,6 @@ task.spawn(function()
             if currentTarget then
                 local currentHumanoid = currentTarget:FindFirstChildOfClass("Humanoid")
                 if not currentHumanoid or currentHumanoid.Health <= 0 or IsMonsterInsideSafeZoneFolder(currentTarget) then
-                    if currentTween then 
-                        currentTween:Cancel() 
-                        currentTween = nil
-                    end
                     currentTarget = nil 
                 end
             end
@@ -548,51 +520,32 @@ task.spawn(function()
             if currentTarget and currentTarget:FindFirstChild("HumanoidRootPart") then
                 local enemyRoot = currentTarget.HumanoidRootPart
                 
-                -- เช็กเลเวล: ถ้าน้อยกว่า 50 ใช้รัศมี 2 แต่ถ้า 50 ขึ้นไปใช้รัศมี 12 (ตามโค้ดต้นฉบับ Ghoul)
-                local orbitRadius = 11
-                if GetPlayerLevel() < 52 then
-                    orbitRadius = 2
-                end
-                
-                local orbitSpeed = 7.4   -- ความเร็วในการหมุนวนรอบตัว
-                local angle = tick() * orbitSpeed
-                
-                -- คำนวณพิกัด X และ Z ให้หมุนรอบตัวมอนสเตอร์
-                local offsetX = math.cos(angle) * orbitRadius
-                local offsetZ = math.sin(angle) * orbitRadius
-                local targetPosition = enemyRoot.Position + Vector3.new(offsetX, 0, offsetZ)
-                
-                -- หันหน้าเข้าหามอนสเตอร์เสมอขณะหมุนวน
-                local lookAtCFrame = CFrame.lookAt(targetPosition, enemyRoot.Position)
+                -- เซ็ตตำแหน่งให้อยู่ใต้เท้ามอนสเตอร์ และหันหน้าเข้าหามอนสเตอร์ทันทีด้วย CFrame.lookAt
+                local targetPosition = enemyRoot.Position - Vector3.new(0, 6, 0)
+                local lookAtCFrame = CFrame.lookAt(targetPosition, Vector3.new(enemyRoot.Position.X, targetPosition.Y, enemyRoot.Position.Z))
                 
                 local distance = (targetPosition - rootPart.Position).Magnitude
-                local tweenTime = distance / TWEEN_SPEED
-                if tweenTime < 0.03 then tweenTime = 0.03 end
-                
-                if currentTween then currentTween:Cancel() end
-                
-                currentTween = TweenService:Create(
-                    rootPart,
-                    TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
-                    {CFrame = lookAtCFrame}
-                )
-                currentTween:Play()
-            else
-                if currentTween then 
-                    currentTween:Cancel() 
-                    currentTween = nil
+                if distance > 2 then
+                    local direction = (targetPosition - rootPart.Position).Unit
+                    local moveStep = math.min(FLY_SPEED * 0.016, distance)
+                    rootPart.Velocity = direction * FLY_SPEED
+                    -- บินไปพร้อมกับล็อกองศาการหันหน้าเข้าหามอนสเตอร์ทันที
+                    rootPart.CFrame = CFrame.new(rootPart.CFrame.Position + (direction * moveStep), enemyRoot.Position)
+                else
+                    rootPart.Velocity = Vector3.new(0, 0, 0)
+                    -- ถึงตำแหน่งแล้วบังคับหันหน้าเข้าหามอนสเตอร์ทันที 100% แบบไม่มีดีเลย์
+                    rootPart.CFrame = CFrame.new(targetPosition, enemyRoot.Position)
                 end
+            else
+                rootPart.Velocity = Vector3.new(0, 0, 0)
             end
         else
-            if currentTween and not isDoingQuest then
-                currentTween:Cancel()
-                currentTween = nil
-            end
+            rootPart.Velocity = Vector3.new(0, 0, 0)
         end
     end
 end)
 
-print("SmoothHub Fully Fixed & Dynamic Orbit Added!")
+print("SmoothHub Full Fly & Under-Feet Version Loaded Successfully!")
 
 -- ====================================
 -- ระบบกด E (ทำงานแยกตามปกติ)
@@ -647,7 +600,7 @@ task.spawn(function()
 end)
 
 -- ====================================================================
--- 📊 ระบบอัปเดต Status บน UI (แสดงจุดเลเวล + ชื่อมอนสเตอร์ที่กำลังตี และจำนวนที่เหลือ)
+-- 📊 ระบบอัปเดต Status บน UI
 -- ====================================================================
 task.spawn(function()
     while true do
@@ -660,7 +613,6 @@ task.spawn(function()
                 return
             end
 
-            -- 1. ดึงข้อมูลช่วงเลเวลจุดที่กำลังฟาร์ม
             local questInfo = GetCurrentQuestInfo()
             local spotRange = "Unknown"
             
@@ -681,18 +633,15 @@ task.spawn(function()
             elseif questInfo == QuestConfig.Lv1100 then spotRange = "lvl 1100-1200"
             end
 
-            -- 2. ดึงชื่อมอนสเตอร์ตัวที่กำลังโจมตีอยู่จริงจาก currentTarget
             local targetName = "Unknown"
             if currentTarget and currentTarget.Name then
                 targetName = currentTarget.Name
             else
-                -- ถ้ายังไม่เจอตัวเป้าหมาย ให้ดึงชื่อแรกจากรายชื่อมอนสเตอร์ในเควสปัจจุบัน
                 if questInfo and questInfo.TargetMonsterNames and #questInfo.TargetMonsterNames > 0 then
                     targetName = questInfo.TargetMonsterNames[1]
                 end
             end
 
-            -- 3. ดึงจำนวนเควสที่เหลือจากหน้าจอ UI (เช่น 1/6)
             local countText = "0/6"
             local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
             if playerGui then
@@ -711,12 +660,10 @@ task.spawn(function()
                 end
             end
 
-            -- 4. อัปเดตแสดงผลรวมกันบน UI
             if _G.GhoulStatusObj then
                 if not HasActiveQuest() then
                     _G.GhoulStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
                 else
-                    -- รูปแบบที่จะแสดง: [Human] 1/6 | I'm farming at the lvl 600-700 spot right now
                     local displayText = "[" .. targetName .. "] " .. countText .. " (" .. spotRange .. ")"
                     _G.GhoulStatusObj.SetText(displayText, Color3.fromRGB(40, 220, 100))
                 end
