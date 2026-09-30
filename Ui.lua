@@ -227,7 +227,7 @@ pcall(function()
     end
 end)
 
--- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)[cite: 2]
+-- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -248,7 +248,7 @@ task.spawn(function()
                             local limit = limits[statName] or 0
                             local currentStatVal = 0
                             
-                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")[cite: 2]
+                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")
                             local success, val = pcall(function()
                                 local statFolder = LocalPlayer:FindFirstChild("Stat")
                                 if statFolder then
@@ -260,7 +260,6 @@ task.spawn(function()
                                         if statObj then return statObj.Value end
                                     end
                                 end
-                                -- สำรองเช็คใน PlayerStats แบบเดิม
                                 return LocalPlayer.PlayerStats[statName].Value
                             end)
                             
@@ -268,7 +267,6 @@ task.spawn(function()
                                 currentStatVal = val
                             end
                             
-                            -- เช็คเงื่อนไข: ถ้า Limit เป็น 0 ให้ข้ามการจำกัด หรือถ้าค่าในเกมปัจจุบันยังน้อยกว่า Limit ถึงจะอัป
                             if limit == 0 or currentStatVal < limit then
                                 local amount = tonumber(_G.SmoothHubConfig.CustomsAmount) or 1
                                 dataEvent:FireServer({
@@ -683,6 +681,153 @@ SleepFrame.MouseButton1Click:Connect(function()
     end
 end)
 
+-- 🔔 ระบบแจ้งเตือนข้างจอ (Notification Toast System with MacBook Controls & Live Animation - Top to Bottom)
+local NotifGui = Instance.new("ScreenGui")
+NotifGui.Name = "SmoothHub_NotificationGui"
+NotifGui.Parent = CoreGui
+NotifGui.ResetOnSpawn = false
+NotifGui.DisplayOrder = 99999999
+
+local NotifContainer = Instance.new("ScrollingFrame")
+NotifContainer.Name = "NotifContainer"
+NotifContainer.Size = UDim2.new(0, 320, 1, -20)
+NotifContainer.Position = UDim2.new(1, -335, 0, 10)
+NotifContainer.BackgroundTransparency = 1
+NotifContainer.BorderSizePixel = 0
+NotifContainer.ScrollBarThickness = 0
+NotifContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+NotifContainer.Parent = NotifGui
+
+local NotifLayout = Instance.new("UIListLayout")
+NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top -- เรียงจากบนลงล่าง
+NotifLayout.Padding = UDim.new(0, 8)
+NotifLayout.Parent = NotifContainer
+
+NotifLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    NotifContainer.CanvasSize = UDim2.new(0, 0, 0, NotifLayout.AbsoluteContentSize.Y)
+end)
+
+local function ShowRedeemNotification(codeText, statusTitle)
+    local Toast = Instance.new("Frame")
+    Toast.Size = UDim2.new(1, 0, 0, 65)
+    Toast.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Toast.BackgroundTransparency = 0.15
+    Toast.BorderSizePixel = 0
+    Toast.ClipsDescendants = true
+    Toast.Parent = NotifContainer
+
+    local ToastCorner = Instance.new("UICorner")
+    ToastCorner.CornerRadius = UDim.new(0, 8)
+    ToastCorner.Parent = Toast
+
+    local ToastStroke = Instance.new("UIStroke")
+    ToastStroke.Color = Color3.fromRGB(60, 60, 60)
+    ToastStroke.Transparency = 0.5
+    ToastStroke.Thickness = 1
+    ToastStroke.Parent = Toast
+
+    -- ปุ่มสไตล์ MacBook (แดง เขียว เหลือง)
+    local MacDotsContainer = Instance.new("Frame")
+    MacDotsContainer.Size = UDim2.new(0, 50, 0, 12)
+    MacDotsContainer.Position = UDim2.new(0, 12, 0, 10)
+    MacDotsContainer.BackgroundTransparency = 1
+    MacDotsContainer.Parent = Toast
+
+    local DotsLayout = Instance.new("UIListLayout")
+    DotsLayout.FillDirection = Enum.FillDirection.Horizontal
+    DotsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    DotsLayout.Padding = UDim.new(0, 5)
+    DotsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    DotsLayout.Parent = MacDotsContainer
+
+    local dotColors = {
+        Color3.fromRGB(255, 95, 86),   -- แดง
+        Color3.fromRGB(255, 189, 46), -- เหลือง
+        Color3.fromRGB(39, 201, 63)   -- เขียว
+    }
+
+    for _, col in ipairs(dotColors) do
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.new(0, 10, 0, 10)
+        dot.BackgroundColor3 = col
+        dot.BorderSizePixel = 0
+        dot.Parent = MacDotsContainer
+
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+    end
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, -75, 0, 18)
+    TitleLabel.Position = UDim2.new(0, 70, 0, 7)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.FontFace = SFProBoldFont
+    TitleLabel.TextSize = 13
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Text = "Redeeming..." -- เริ่มต้นด้วยสถานะกำลังโหลด
+    TitleLabel.Parent = Toast
+
+    local DescLabel = Instance.new("TextLabel")
+    DescLabel.Size = UDim2.new(1, -24, 0, 20)
+    DescLabel.Position = UDim2.new(0, 12, 0, 32)
+    DescLabel.BackgroundTransparency = 1
+    DescLabel.FontFace = SFProMediumFont
+    DescLabel.TextSize = 12
+    DescLabel.TextColor3 = Color3.fromRGB(180, 195, 200)
+    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescLabel.Text = "Code: " .. tostring(codeText)
+    DescLabel.Parent = Toast
+
+    -- หลอดโหลดจิ๋วเพิ่มชีวิตชีวา (Live Loading Bar)
+    local LoadBarBg = Instance.new("Frame")
+    LoadBarBg.Size = UDim2.new(1, 0, 0, 3)
+    LoadBarBg.Position = UDim2.new(0, 0, 1, -3)
+    LoadBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    LoadBarBg.BorderSizePixel = 0
+    LoadBarBg.Parent = Toast
+
+    local LoadBarFill = Instance.new("Frame")
+    LoadBarFill.Size = UDim2.new(0, 0, 1, 0)
+    LoadBarFill.BackgroundColor3 = Color3.fromRGB(10, 132, 255)
+    LoadBarFill.BorderSizePixel = 0
+    LoadBarFill.Parent = LoadBarBg
+
+    -- แอนิเมชันเปิดตัว
+    Toast.Position = UDim2.new(1, 40, 0, 0)
+    TweenService:Create(Toast, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    -- วิ่งหลอดโหลด
+    TweenService:Create(LoadBarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(1, 0, 1, 0)
+    }):Play()
+
+    -- เปลี่ยนเป็นสถานะสำเร็จเมื่อโหลดเต็ม
+    task.delay(0.5, function()
+        if Toast and Toast.Parent then
+            TitleLabel.Text = statusTitle or "Redeemed Code"
+            LoadBarFill.BackgroundColor3 = Color3.fromRGB(39, 201, 63) -- เปลี่ยนเป็นสีเขียว
+        end
+    end)
+
+    -- ให้แสดงค้างไว้ 3 วินาทีแล้วเลื่อนหลบหายไป
+    task.delay(10, function()
+        if Toast and Toast.Parent then
+            local outTween = TweenService:Create(Toast, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(1, 40, 0, 0),
+                BackgroundTransparency = 1
+            })
+            outTween:Play()
+            outTween.Completed:Wait()
+            Toast:Destroy()
+        end
+    end)
+end
+
 local SmoothHub = {}
 
 local function BuildUI()
@@ -898,6 +1043,7 @@ for i, btnColor in ipairs(controlColors) do
 		Circle.MouseButton1Click:Connect(function()
 			ScreenGui:Destroy()
 			SleepGui:Destroy()
+			NotifGui:Destroy()
 		end)
 	elseif i == 2 then
 		Circle.MouseButton1Click:Connect(function()
@@ -1505,6 +1651,78 @@ function NewPageClass(targetCanvas)
 			lastContainer = PageObj:CreateSection("", "", "")
 		end
 		return lastContainer
+	end
+
+	function PageObj:CreateButton(buttonName, buttonDesc, callback)
+		local callback = callback or function() end
+		local targetContainer = GetLatestContainer()
+		local widgetIndex = #targetContainer:GetChildren() - 1
+
+		local WidgetFrame = Instance.new("Frame")
+		WidgetFrame.Name = buttonName .. "_Widget"
+		WidgetFrame.Size = UDim2.new(1, 0, 0, 64)
+		WidgetFrame.BackgroundTransparency = 1
+		WidgetFrame.BorderSizePixel = 0
+		WidgetFrame.LayoutOrder = widgetIndex
+		WidgetFrame.Parent = targetContainer
+
+		if widgetIndex > 1 then
+			local itemDivider = Instance.new("Frame")
+			itemDivider.Name = "ItemDivider"
+			itemDivider.Size = UDim2.new(1, -28, 0, 1)
+			itemDivider.Position = UDim2.new(0, 14, 0, 0)
+			itemDivider.BackgroundColor3 = Color3.fromRGB(35, 52, 56)
+			itemDivider.BorderSizePixel = 0
+			itemDivider.Parent = WidgetFrame
+		end
+
+		local WidgetTitle = Instance.new("TextLabel")
+		WidgetTitle.Size = UDim2.new(1, -130, 0, 24)
+		WidgetTitle.Position = UDim2.new(0, 14, 0, 11)
+		WidgetTitle.BackgroundTransparency = 1
+		WidgetTitle.FontFace = SFProMediumFont
+		WidgetTitle.TextSize = 13
+		WidgetTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+		WidgetTitle.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetTitle.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetTitle.Text = buttonName
+		WidgetTitle.Parent = WidgetFrame
+
+		local WidgetDesc = Instance.new("TextLabel")
+		WidgetDesc.Size = UDim2.new(1, -130, 0, 18)
+		WidgetDesc.Position = UDim2.new(0, 14, 0, 35)
+		WidgetDesc.BackgroundTransparency = 1
+		WidgetDesc.FontFace = SFProMediumFont
+		WidgetDesc.TextSize = 11
+		WidgetDesc.TextColor3 = Color3.fromRGB(140, 155, 160)
+		WidgetDesc.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetDesc.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetDesc.Text = buttonDesc
+		WidgetDesc.Parent = WidgetFrame
+
+		local ActionButton = Instance.new("TextButton")
+		ActionButton.Name = "ActionButton"
+		ActionButton.Size = UDim2.new(0, 110, 0, 32)
+		ActionButton.Position = UDim2.new(1, -124, 0.5, -16)
+		ActionButton.BackgroundColor3 = Color3.fromRGB(35, 45, 50)
+		ActionButton.BackgroundTransparency = 0.5
+		ActionButton.BorderSizePixel = 0
+		ActionButton.AutoButtonColor = true
+		ActionButton.FontFace = SFProBoldFont
+		ActionButton.TextSize = 12
+		ActionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		ActionButton.Text = "Redeem"
+		ActionButton.Parent = WidgetFrame
+
+		local ActionCorner = Instance.new("UICorner")
+		ActionCorner.CornerRadius = UDim.new(0, 6)
+		ActionCorner.Parent = ActionButton
+
+		ActionButton.MouseButton1Click:Connect(function()
+			task.spawn(function()
+				callback()
+			end)
+		end)
 	end
 
 	function PageObj:CreateStatus(statusName, defaultText, statusDesc)
@@ -2776,6 +2994,73 @@ SmoothHub:CreateCategory("IN GAME", 1)
 SmoothHub:CreateCategory("SETTINGS", 3)
 
 local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main Farm", 2, "Main | Kanom Tokyo", true)
+
+-- 🎁 ระบบ Redeem Code
+MainFarmPage:CreateSection("🎁", "Redeem Code", "Redeem active promotional codes for rewards.")
+MainFarmPage:CreateButton("Redeem All Codes", "Automatically redeem all available codes in the game.", function()
+    pcall(function()
+        local Event = nil
+        pcall(function()
+            Event = ReplicatedStorage:FindFirstChild("Modules") 
+                and ReplicatedStorage.Modules:FindFirstChild("Network") 
+                and ReplicatedStorage.Modules.Network:FindFirstChild("ByteNetMax") 
+                and ReplicatedStorage.Modules.Network.ByteNetMax:FindFirstChild("system") 
+                and ReplicatedStorage.Modules.Network.ByteNetMax.system:FindFirstChild("ByteNetQuery")
+        end)
+        
+        if not Event then
+            for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+                if (v:IsA("RemoteEvent") or v:IsA("RemoteFunction")) and (v.Name:lower():find("code") or v.Name:lower():find("system") or v.Name:lower():find("query")) then
+                    Event = v
+                    break
+                end
+            end
+        end
+            
+        if Event then
+            local codes = {
+                "RELEASE", "LIKE1000", "LIKE2000","RestartAgainSoon...", "Soon...", "JackkeyxTei", "UPDATE1.5", "VALENTINE", "EtoV3!", 
+                "5KFAVORITES", "10KLIKES", "2MVISITS", "UPDATE1", "SEWERDOG", "Sorry4Restarts", "QOLUPDATES",
+                "15KLikes!", "10KFavorites!", "Ginkui_Update!", "S0rry4D314y...", "15KLikes", "10KFavorites", 
+                "TAKIZAWA!", "Update2.5", "FORNEWPLAYER!", "RAIDHASBEENDEFEATED", "UPDATENOW!",
+                "FREEGACHA!?", "GACHAAGAIN!!", "LETRAIDTOGETHER!", "PLAYERSISBACK!", "LETFARMING!!", 
+                "TRYHARDER!!!", "Tatara", "Updatae2.5", "SorryForLongUpdate", "Release", "NARUKAMI",
+                "UPDATE2", "Eugeo", "SorryForDelay", "UPDATE0.5", "WANDEK2026", "1MVISITS", "SorryForShutdown", 
+                "THANKFOR10KGROUPMEMBER", "SORRYFORBUG", "EugeoZa", "THANKFOR10KVISITS", "Release!", "COUNTDOWN", 
+                "SORRYFORBUGT_T", "THANKFOR10KMEMBER", "MINIUPDATE", "THANKSFOR1KONLINE", "SRYFORDELAY"
+            }
+            for _, codeText in ipairs(codes) do
+                pcall(function()
+                    if Event:IsA("RemoteEvent") then
+                        Event:FireServer(codeText)
+                    elseif Event:IsA("RemoteFunction") then
+                        Event:InvokeServer(codeText)
+                    else
+                        local bytes = {}
+                        for i = 1, #codeText do
+                            table.insert(bytes, string.byte(codeText, i))
+                        end
+                        local buf = buffer.create(#bytes)
+                        for idx = 1, #bytes do
+                            buffer.writeu8(buf, idx - 1, bytes[idx])
+                        end
+                        Event:InvokeServer(buf, nil, 1)
+                    end
+                end)
+                
+                -- แสดงแจ้งเตือนพร้อมฟังก์ชันโหลดเรียงจากบนลงล่าง
+                ShowRedeemNotification(codeText, "Redeemed Code Successfully")
+                
+                task.wait(0.25)
+            end
+            print("Successfully attempted to redeem all codes!")
+        else
+            warn("Redeem Remote Event not found!")
+            ShowRedeemNotification("Error", "Event Not Found!")
+        end
+    end)
+end)
+
 MainFarmPage:CreateSection("❄", "Auto Farm Level", "Seamlessly grinds and gains experience points without stopping.")
 
 MainFarmPage:CreateToggle("Auto Farm Level | Ghoul  👹", "Automatically completes quests and defeats monsters to raise your level. (Recommended for Ghoul)", function(state)
@@ -2792,7 +3077,6 @@ MainFarmPage:CreateToggle("Fast Attack ", "An extremely fast attack system that 
 	_G.SmoothHubConfig.FastAttack = state
 end)
 
--- ➕ หมวดหมู่ Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 สำเร็จ)
 MainFarmPage:CreateSection("📈", "Auto Upgrade Stats", "Automatically invests your available stat points into your chosen category.")
 
 MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {"Damage"}, function(selectedTable)
@@ -2809,7 +3093,6 @@ MainFarmPage:CreateTextbox("Durability", "Set max limit level for Durability (Ma
 MainFarmPage:CreateTextbox("Stamina", "Set max limit level for Stamina (Max: 150)", 0, function(val) _G.SmoothHubConfig.StaminaLimit = val end)
 MainFarmPage:CreateTextbox("Speed", "Set max limit level for Speed (Max: 150)", 0, function(val) _G.SmoothHubConfig.SpeedLimit = val end)
 
--- ➕ เพิ่ม Status แสดงค่าสเตตัสและเลเวลจริงแบบเรียลไทม์ไว้ล่างสุดของหมวด Auto Upgrade Stats
 local StatStatusObj = MainFarmPage:CreateStatus("Stats Status", "Lvl: 0 | Dmg: 0 | Dur: 0 | Sta: 0 | Spd: 0", "Real-time character stats & level tracking.")
 
 task.spawn(function()
