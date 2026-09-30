@@ -2618,7 +2618,7 @@ local function PlayLoadingLogo(callback)
             tween3.Completed:Wait()
             StatusText.TextColor3 = Color3.fromRGB(40, 220, 100) -- ปรับเป็นสีเขียว
             StatusText.Text = "Ready!"
-            task.wait(2)
+            task.wait(3)
 
             -- เฟดเอ้าท์หน้าจอโหลดเมนู UI ออกไป
             local fadeInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
