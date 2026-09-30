@@ -227,7 +227,7 @@ pcall(function()
     end
 end)
 
--- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)[cite: 19, 20, 23]
+-- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)[cite: 2]
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -248,7 +248,7 @@ task.spawn(function()
                             local limit = limits[statName] or 0
                             local currentStatVal = 0
                             
-                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")[cite: 23]
+                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")[cite: 2]
                             local success, val = pcall(function()
                                 local statFolder = LocalPlayer:FindFirstChild("Stat")
                                 if statFolder then
@@ -2809,13 +2809,20 @@ MainFarmPage:CreateTextbox("Durability", "Set max limit level for Durability (Ma
 MainFarmPage:CreateTextbox("Stamina", "Set max limit level for Stamina (Max: 150)", 0, function(val) _G.SmoothHubConfig.StaminaLimit = val end)
 MainFarmPage:CreateTextbox("Speed", "Set max limit level for Speed (Max: 150)", 0, function(val) _G.SmoothHubConfig.SpeedLimit = val end)
 
--- ➕ เพิ่ม Status แสดงค่าสเตตัสจริงแบบเรียลไทม์ไว้ล่างสุดของหมวด Auto Upgrade Stats
-local StatStatusObj = MainFarmPage:CreateStatus("Stats Status", "Damage: 0 | Durability: 0 | Stamina: 0 | Speed: 0", "Real-time character stats tracking.")
+-- ➕ เพิ่ม Status แสดงค่าสเตตัสและเลเวลจริงแบบเรียลไทม์ไว้ล่างสุดของหมวด Auto Upgrade Stats
+local StatStatusObj = MainFarmPage:CreateStatus("Stats Status", "Lvl: 0 | Dmg: 0 | Dur: 0 | Sta: 0 | Spd: 0", "Real-time character stats & level tracking.")
 
 task.spawn(function()
     while true do
         task.wait(0.5)
         pcall(function()
+            local levelVal = 0
+            local dataFolder = LocalPlayer:FindFirstChild("Data")
+            if dataFolder then
+                local levelObj = dataFolder:FindFirstChild("Level")
+                if levelObj then levelVal = levelObj.Value end
+            end
+
             local statFolder = LocalPlayer:FindFirstChild("Stat")
             local dmg, dur, sta, spd = 0, 0, 0, 0
             
@@ -2840,7 +2847,7 @@ task.spawn(function()
             end
             
             if StatStatusObj and StatStatusObj.SetText then
-                StatStatusObj.SetText(string.format("Dmg: %d | Dur: %d | Sta: %d | Spd: %d", dmg, dur, sta, spd))
+                StatStatusObj.SetText(string.format("Lvl: %d | Dmg: %d | Dur: %d | Sta: %d | Spd: %d", levelVal, dmg, dur, sta, spd))
             end
         end)
     end
