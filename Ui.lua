@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- กำหนด Font San Francisco Pro ผ่าน Font.fromId
 local SFProFont = Font.fromId(12187365364, Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -35,7 +36,20 @@ _G.SmoothHubConfig = {
     Fly = false,
     FlySpeed = 50,
     Noclip = false,
-    EnableRGB = false
+    EnableRGB = false,
+    -- Config สำหรับ Auto Upgrade Stats
+    AutoUpgradeStats = false,
+    StatSelection = {
+        Damage = false,
+        Durability = false,
+        Stamina = false,
+        Speed = false
+    },
+    DamageLimit = 0,
+    DurabilityLimit = 0,
+    StaminaLimit = 0,
+    SpeedLimit = 0,
+    CustomsAmount = 1
 }
 
 -- 🎨 ระบบสีธีมระดับพรีเมียม (Redesigned Aesthetic Themes)
@@ -210,6 +224,67 @@ pcall(function()
         else
             setfpscap(9999)
         end
+    end
+end)
+
+-- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)[cite: 19, 20, 23]
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        pcall(function()
+            if _G.SmoothHubConfig.AutoUpgradeStats then
+                local dataEvent = ReplicatedStorage:FindFirstChild("BridgeNet2") and ReplicatedStorage.BridgeNet2:FindFirstChild("dataRemoteEvent")
+                if dataEvent then
+                    local statsToUpgrade = {"Damage", "Durability", "Stamina", "Speed"}
+                    local limits = {
+                        Damage = _G.SmoothHubConfig.DamageLimit,
+                        Durability = _G.SmoothHubConfig.DurabilityLimit,
+                        Stamina = _G.SmoothHubConfig.StaminaLimit,
+                        Speed = _G.SmoothHubConfig.SpeedLimit
+                    }
+                    
+                    for _, statName in ipairs(statsToUpgrade) do
+                        if _G.SmoothHubConfig.StatSelection and _G.SmoothHubConfig.StatSelection[statName] then
+                            local limit = limits[statName] or 0
+                            local currentStatVal = 0
+                            
+                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")[cite: 23]
+                            local success, val = pcall(function()
+                                local statFolder = LocalPlayer:FindFirstChild("Stat")
+                                if statFolder then
+                                    if statName == "Speed" then
+                                        local speedValObj = statFolder:FindFirstChild("ความเร็ว") or statFolder:FindFirstChild("Speed")
+                                        if speedValObj then return speedValObj.Value end
+                                    else
+                                        local statObj = statFolder:FindFirstChild(statName)
+                                        if statObj then return statObj.Value end
+                                    end
+                                end
+                                -- สำรองเช็คใน PlayerStats แบบเดิม
+                                return LocalPlayer.PlayerStats[statName].Value
+                            end)
+                            
+                            if success and type(val) == "number" then
+                                currentStatVal = val
+                            end
+                            
+                            -- เช็คเงื่อนไข: ถ้า Limit เป็น 0 ให้ข้ามการจำกัด หรือถ้าค่าในเกมปัจจุบันยังน้อยกว่า Limit ถึงจะอัป
+                            if limit == 0 or currentStatVal < limit then
+                                local amount = tonumber(_G.SmoothHubConfig.CustomsAmount) or 1
+                                dataEvent:FireServer({
+                                    {
+                                        statName,
+                                        amount
+                                    },
+                                    "\v"
+                                })
+                                task.wait(0.1)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
     end
 end)
 
@@ -1526,6 +1601,7 @@ function NewPageClass(targetCanvas)
 			or toggleName:match("Fly") and "Fly"
 			or toggleName:match("Noclip") and "Noclip"
 			or toggleName:match("Enable RGB") and "EnableRGB"
+			or toggleName:match("Auto Upgrade") and "AutoUpgradeStats"
 			
 		local isToggled = configKey and _G.SmoothHubConfig[configKey] or false
 		local targetContainer = GetLatestContainer()
@@ -1661,6 +1737,123 @@ function NewPageClass(targetCanvas)
 			if toggleName:match("Streamer Mode") then
 				UpdateStreamerMode(newState)
 			end
+		end)
+	end
+
+	function PageObj:CreateTextbox(boxName, boxDesc, defaultVal, callback)
+		local callback = callback or function() end
+		local currentValue = tostring(defaultVal or "0")
+		
+		local targetContainer = GetLatestContainer()
+		local widgetIndex = #targetContainer:GetChildren() - 1
+
+		local WidgetFrame = Instance.new("Frame")
+		WidgetFrame.Name = boxName .. "_Widget"
+		WidgetFrame.Size = UDim2.new(1, 0, 0, 64)
+		WidgetFrame.BackgroundTransparency = 1
+		WidgetFrame.BorderSizePixel = 0
+		WidgetFrame.LayoutOrder = widgetIndex
+		WidgetFrame.Parent = targetContainer
+
+		if widgetIndex > 1 then
+			local itemDivider = Instance.new("Frame")
+			itemDivider.Name = "ItemDivider"
+			itemDivider.Size = UDim2.new(1, -28, 0, 1)
+			itemDivider.Position = UDim2.new(0, 14, 0, 0)
+			itemDivider.BackgroundColor3 = Color3.fromRGB(35, 52, 56)
+			itemDivider.BorderSizePixel = 0
+			itemDivider.Parent = WidgetFrame
+		end
+
+		local WidgetTitle = Instance.new("TextLabel")
+		WidgetTitle.Size = UDim2.new(1, -160, 0, 24)
+		WidgetTitle.Position = UDim2.new(0, 14, 0, 11)
+		WidgetTitle.BackgroundTransparency = 1
+		WidgetTitle.FontFace = SFProMediumFont
+		WidgetTitle.TextSize = 13
+		WidgetTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+		WidgetTitle.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetTitle.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetTitle.Text = boxName
+		WidgetTitle.Parent = WidgetFrame
+
+		local WidgetDesc = Instance.new("TextLabel")
+		WidgetDesc.Size = UDim2.new(1, -160, 0, 18)
+		WidgetDesc.Position = UDim2.new(0, 14, 0, 35)
+		WidgetDesc.BackgroundTransparency = 1
+		WidgetDesc.FontFace = SFProMediumFont
+		WidgetDesc.TextSize = 11
+		WidgetDesc.TextColor3 = Color3.fromRGB(140, 155, 160)
+		WidgetDesc.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetDesc.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetDesc.Text = boxDesc
+		WidgetDesc.Parent = WidgetFrame
+
+		local InputBox = Instance.new("TextBox")
+		InputBox.Name = "InputBox"
+		InputBox.Size = UDim2.new(0, 140, 0, 32)
+		InputBox.Position = UDim2.new(1, -150, 0.5, -16)
+		InputBox.BackgroundColor3 = Color3.fromRGB(35, 45, 50)
+		InputBox.BackgroundTransparency = 0.5
+		InputBox.BorderSizePixel = 0
+		InputBox.FontFace = SFProMediumFont
+		InputBox.TextSize = 13
+		InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+		InputBox.PlaceholderText = "0"
+		InputBox.Text = currentValue
+		InputBox.ClearTextOnFocus = false
+		InputBox.Parent = WidgetFrame
+
+		local InputCorner = Instance.new("UICorner")
+		InputCorner.CornerRadius = UDim.new(0, 6)
+		InputCorner.Parent = InputBox
+
+		InputBox.Focused:Connect(function()
+			local currentNum = tonumber(InputBox.Text) or 0
+			if currentNum == 0 then
+				InputBox.Text = ""
+			end
+		end)
+
+		InputBox.FocusLost:Connect(function(enterPressed)
+			local num = tonumber(InputBox.Text) or 0
+			
+			if boxName == "Damage" or boxName == "Durability" or boxName == "Stamina" or boxName == "Speed" then
+				local isSelected = false
+				if type(_G.SmoothHubConfig.StatSelection) == "table" then
+					isSelected = _G.SmoothHubConfig.StatSelection[boxName] == true
+				end
+				
+				if not isSelected then
+					num = 0
+				else
+					if boxName == "Damage" or boxName == "Durability" then
+						num = math.clamp(num, 0, 5000)
+					elseif boxName == "Stamina" or boxName == "Speed" then
+						num = math.clamp(num, 0, 150)
+					end
+				end
+			elseif boxName == "Damage" or boxName == "Durability" then
+				num = math.clamp(num, 0, 5000)
+			elseif boxName == "Stamina" or boxName == "Speed" then
+				num = math.clamp(num, 0, 150)
+			end
+			
+			InputBox.Text = tostring(num)
+			
+			if boxName == "Damage" then
+				_G.SmoothHubConfig.DamageLimit = num
+			elseif boxName == "Durability" then
+				_G.SmoothHubConfig.DurabilityLimit = num
+			elseif boxName == "Stamina" then
+				_G.SmoothHubConfig.StaminaLimit = num
+			elseif boxName == "Speed" then
+				_G.SmoothHubConfig.SpeedLimit = num
+			end
+
+			task.spawn(function()
+				callback(num)
+			end)
 		end)
 	end
 
@@ -2141,6 +2334,276 @@ function NewPageClass(targetCanvas)
 			end
 		end)
 	end
+
+	function PageObj:CreateMultiSelectDropdown(dropdownName, dropdownDesc, optionsList, defaultSelected, callback)
+		local callback = callback or function() end
+		
+		local selectedOptions = {}
+		if type(_G.SmoothHubConfig[dropdownName]) == "table" then
+			for _, opt in ipairs(optionsList) do
+				selectedOptions[opt] = _G.SmoothHubConfig[dropdownName][opt] or false
+			end
+		else
+			for _, opt in ipairs(optionsList) do
+				selectedOptions[opt] = false
+			end
+			if type(defaultSelected) == "table" then
+				for _, opt in ipairs(defaultSelected) do
+					selectedOptions[opt] = true
+				end
+			end
+		end
+		_G.SmoothHubConfig[dropdownName] = selectedOptions
+
+		local targetContainer = GetLatestContainer()
+		local widgetIndex = #targetContainer:GetChildren() - 1
+
+		local WidgetFrame = Instance.new("Frame")
+		WidgetFrame.Name = dropdownName .. "_Widget"
+		WidgetFrame.Size = UDim2.new(1, 0, 0, 64)
+		WidgetFrame.BackgroundTransparency = 1
+		WidgetFrame.BorderSizePixel = 0
+		WidgetFrame.LayoutOrder = widgetIndex
+		WidgetFrame.Parent = targetContainer
+
+		if widgetIndex > 1 then
+			local itemDivider = Instance.new("Frame")
+			itemDivider.Name = "ItemDivider"
+			itemDivider.Size = UDim2.new(1, -28, 0, 1)
+			itemDivider.Position = UDim2.new(0, 14, 0, 0)
+			itemDivider.BackgroundColor3 = Color3.fromRGB(35, 52, 56)
+			itemDivider.BorderSizePixel = 0
+			itemDivider.Parent = WidgetFrame
+		end
+
+		local WidgetTitle = Instance.new("TextLabel")
+		WidgetTitle.Size = UDim2.new(1, -160, 0, 24)
+		WidgetTitle.Position = UDim2.new(0, 14, 0, 11)
+		WidgetTitle.BackgroundTransparency = 1
+		WidgetTitle.FontFace = SFProMediumFont
+		WidgetTitle.TextSize = 13
+		WidgetTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+		WidgetTitle.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetTitle.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetTitle.Text = dropdownName
+		WidgetTitle.Parent = WidgetFrame
+
+		local WidgetDesc = Instance.new("TextLabel")
+		WidgetDesc.Size = UDim2.new(1, -160, 0, 18)
+		WidgetDesc.Position = UDim2.new(0, 14, 0, 35)
+		WidgetDesc.BackgroundTransparency = 1
+		WidgetDesc.FontFace = SFProMediumFont
+		WidgetDesc.TextSize = 11
+		WidgetDesc.TextColor3 = Color3.fromRGB(140, 155, 160)
+		WidgetDesc.TextXAlignment = Enum.TextXAlignment.Left
+		WidgetDesc.TextYAlignment = Enum.TextYAlignment.Center
+		WidgetDesc.Text = dropdownDesc
+		WidgetDesc.Parent = WidgetFrame
+
+		local DropdownButton = Instance.new("TextButton")
+		DropdownButton.Name = "DropdownButton"
+		DropdownButton.Size = UDim2.new(0, 140, 0, 32)
+		DropdownButton.Position = UDim2.new(1, -150, 0.5, -16)
+		DropdownButton.BackgroundTransparency = 1
+		DropdownButton.BorderSizePixel = 0
+		DropdownButton.AutoButtonColor = false
+		DropdownButton.Text = ""
+		DropdownButton.Parent = WidgetFrame
+
+		local function getDisplayText()
+			local t = {}
+			for k, v in pairs(selectedOptions) do
+				if v then table.insert(t, k) end
+			end
+			if #t == 0 then return "None"
+			elseif #t == #optionsList then return "All"
+			else return table.concat(t, ", ") end
+		end
+
+		local DropdownText = Instance.new("TextLabel")
+		DropdownText.Name = "DropdownText"
+		DropdownText.Size = UDim2.new(1, -24, 1, 0)
+		DropdownText.Position = UDim2.new(0, 0, 0, 0)
+		DropdownText.BackgroundTransparency = 1
+		DropdownText.FontFace = SFProMediumFont
+		DropdownText.TextSize = 12
+		DropdownText.TextColor3 = Themes[_G.SmoothHubConfig.CurrentTheme].Accent
+		DropdownText.TextXAlignment = Enum.TextXAlignment.Right
+		DropdownText.TextYAlignment = Enum.TextYAlignment.Center
+		DropdownText.Text = getDisplayText()
+		DropdownText.Parent = DropdownButton
+		table.insert(allDropdownTexts, DropdownText)
+
+		local DropdownArrow = Instance.new("ImageLabel")
+		DropdownArrow.Name = "DropdownArrow"
+		DropdownArrow.Size = UDim2.new(0, 14, 0, 14)
+		DropdownArrow.Position = UDim2.new(1, -16, 0.5, -7)
+		DropdownArrow.BackgroundTransparency = 1
+		DropdownArrow.Image = "rbxassetid://77844815691418"
+		DropdownArrow.ImageColor3 = Themes[_G.SmoothHubConfig.CurrentTheme].Accent
+		DropdownArrow.Parent = DropdownButton
+
+		local DropdownListFrame = Instance.new("ScrollingFrame")
+		DropdownListFrame.Name = "DropdownListFrame"
+		DropdownListFrame.Size = UDim2.new(0, 140, 0, 0)
+		DropdownListFrame.Position = UDim2.new(1, -150, 1, -10)
+		DropdownListFrame.BackgroundColor3 = Color3.fromRGB(22, 35, 38)
+		DropdownListFrame.BackgroundTransparency = 1
+		DropdownListFrame.BorderSizePixel = 0
+		DropdownListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+		DropdownListFrame.ScrollBarThickness = 3
+		DropdownListFrame.Visible = false
+		DropdownListFrame.ZIndex = 500
+		DropdownListFrame.Parent = ScreenGui
+
+		local ListCorner = Instance.new("UICorner")
+		ListCorner.CornerRadius = UDim.new(0, 6)
+		ListCorner.Parent = DropdownListFrame
+
+		local ListLayout = Instance.new("UIListLayout")
+		ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		ListLayout.Parent = DropdownListFrame
+
+		ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			DropdownListFrame.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
+		end)
+
+		local optionItems = {}
+		local activeTween = nil
+		local isOpenDropdown = false
+
+		for _, opt in ipairs(optionsList) do
+			local OptionBtn = Instance.new("TextButton")
+			OptionBtn.Name = "Option_" .. opt
+			OptionBtn.Size = UDim2.new(1, 0, 0, 28)
+			OptionBtn.BackgroundTransparency = 1
+			OptionBtn.BorderSizePixel = 0
+			OptionBtn.AutoButtonColor = false
+			OptionBtn.Text = ""
+			OptionBtn.ZIndex = 501
+			OptionBtn.Parent = DropdownListFrame
+
+			local CheckIcon = Instance.new("ImageLabel")
+			CheckIcon.Name = "CheckIcon"
+			CheckIcon.Size = UDim2.new(0, 12, 0, 12)
+			CheckIcon.Position = UDim2.new(0, 8, 0.5, -6)
+			CheckIcon.BackgroundTransparency = 1
+			CheckIcon.Image = "rbxassetid://115627370761282"
+			CheckIcon.ImageColor3 = Color3.fromRGB(50, 225, 130)
+			CheckIcon.Visible = selectedOptions[opt]
+			CheckIcon.ZIndex = 502
+			CheckIcon.Parent = OptionBtn
+
+			local OptionText = Instance.new("TextLabel")
+			OptionText.Name = "OptionText"
+			OptionText.Size = UDim2.new(1, -26, 1, 0)
+			OptionText.Position = UDim2.new(0, 26, 0, 0)
+			OptionText.BackgroundTransparency = 1
+			OptionText.FontFace = SFProMediumFont
+            OptionText.TextSize = 12
+			OptionText.TextColor3 = selectedOptions[opt] and Themes[_G.SmoothHubConfig.CurrentTheme].Accent or Color3.fromRGB(200, 215, 220)
+			OptionText.Text = opt
+			OptionText.TextXAlignment = Enum.TextXAlignment.Left
+			OptionText.TextYAlignment = Enum.TextYAlignment.Center
+			OptionText.ZIndex = 502
+			OptionText.Parent = OptionBtn
+
+			OptionBtn.MouseEnter:Connect(function()
+				TweenService:Create(OptionText, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Position = UDim2.new(0, 32, 0, 0),
+					TextTransparency = 0
+				}):Play()
+				TweenService:Create(CheckIcon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Position = UDim2.new(0, 12, 0.5, -6)
+				}):Play()
+			end)
+
+			OptionBtn.MouseLeave:Connect(function()
+				TweenService:Create(OptionText, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Position = UDim2.new(0, 26, 0, 0)
+				}):Play()
+				TweenService:Create(CheckIcon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Position = UDim2.new(0, 8, 0.5, -6)
+				}):Play()
+			end)
+
+			table.insert(optionItems, {Btn = OptionBtn, Text = opt, TxtLabel = OptionText, Check = CheckIcon})
+
+			OptionBtn.MouseButton1Click:Connect(function()
+				selectedOptions[opt] = not selectedOptions[opt]
+				CheckIcon.Visible = selectedOptions[opt]
+				OptionText.TextColor3 = selectedOptions[opt] and Themes[_G.SmoothHubConfig.CurrentTheme].Accent or Color3.fromRGB(200, 215, 220)
+				
+				DropdownText.Text = getDisplayText()
+				_G.SmoothHubConfig[dropdownName] = selectedOptions
+
+				task.spawn(function()
+					callback(selectedOptions)
+				end)
+			end)
+		end
+
+		DropdownButton.MouseButton1Click:Connect(function()
+			isOpenDropdown = not isOpenDropdown
+			local absPos = DropdownButton.AbsolutePosition
+			local absSize = DropdownButton.AbsoluteSize
+			local targetHeight = math.min(#optionsList * 28, 160)
+			
+			if activeTween then activeTween:Cancel() end
+			local animInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			
+			if isOpenDropdown then
+				DropdownListFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+				DropdownListFrame.Visible = true
+				activeTween = TweenService:Create(DropdownListFrame, animInfo, {
+					Size = UDim2.new(0, absSize.X, 0, targetHeight),
+					BackgroundTransparency = 0.15
+				})
+				activeTween:Play()
+			else
+				activeTween = TweenService:Create(DropdownListFrame, animInfo, {
+					Size = UDim2.new(0, absSize.X, 0, 0),
+					BackgroundTransparency = 1
+				})
+				activeTween:Play()
+				task.delay(0.18, function()
+					if DropdownListFrame.Size.Y.Offset == 0 then
+						DropdownListFrame.Visible = false
+					end
+				end)
+			end
+		end)
+
+		UserInputService.InputBegan:Connect(function(input)
+			if isOpenDropdown and input.UserInputType == Enum.UserInputType.MouseButton1 then
+				local mousePos = input.Position
+				local btnPos = DropdownButton.AbsolutePosition
+				local btnSize = DropdownButton.AbsoluteSize
+				local listPos = DropdownListFrame.AbsolutePosition
+				local listSize = DropdownListFrame.AbsoluteSize
+
+				local inBtn = mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and mousePos.Y >= btnPos.Y and mousePos.Y <= btnPos.Y + btnSize.Y
+				local inList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
+
+				if not inBtn and not inList then
+					isOpenDropdown = false
+					if activeTween then activeTween:Cancel() end
+					local closeAnim = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					activeTween = TweenService:Create(DropdownListFrame, closeAnim, {
+						Size = UDim2.new(0, btnSize.X, 0, 0),
+						BackgroundTransparency = 1
+					})
+					activeTween:Play()
+					
+					task.delay(0.15, function()
+						if DropdownListFrame.Size.Y.Offset == 0 then
+							DropdownListFrame.Visible = false
+						end
+					end)
+				end
+			end
+		end)
+	end
 	
 	return PageObj
 end
@@ -2313,13 +2776,12 @@ SmoothHub:CreateCategory("IN GAME", 1)
 SmoothHub:CreateCategory("SETTINGS", 3)
 
 local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main Farm", 2, "Main | Kanom Tokyo", true)
-MainFarmPage:CreateSection("❄", "Automation Control", "Manage all automated systems and tasks.")
+MainFarmPage:CreateSection("❄", "Auto Farm Level", "Seamlessly grinds and gains experience points without stopping.")
 
 MainFarmPage:CreateToggle("Auto Farm Level | Ghoul  👹", "Automatically completes quests and defeats monsters to raise your level. (Recommended for Ghoul)", function(state)
 	_G.SmoothHubConfig.AutoFarmLevelGhoul = state
 end)
 _G.GhoulStatusObj = MainFarmPage:CreateStatus("Ghoul Status", "Idle", "Shows current operational state for Ghoul farm.")
-
 
 MainFarmPage:CreateToggle("Auto Farm Level | CCG  👔", "Automatically completes quests and defeats monsters to raise your level. (Recommended for CCG)", function(state)
 	_G.SmoothHubConfig.AutoFarmLevelCCG = state
@@ -2329,6 +2791,61 @@ _G.CCGStatusObj = MainFarmPage:CreateStatus("CCG Status", "Idle", "Shows current
 MainFarmPage:CreateToggle("Fast Attack ", "An extremely fast attack system that hits much quicker than normal.", function(state)
 	_G.SmoothHubConfig.FastAttack = state
 end)
+
+-- ➕ หมวดหมู่ Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 สำเร็จ)
+MainFarmPage:CreateSection("📈", "Auto Upgrade Stats", "Automatically invests your available stat points into your chosen category.")
+
+MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {"Damage"}, function(selectedTable)
+    _G.SmoothHubConfig.StatSelection = selectedTable
+end)
+
+MainFarmPage:CreateTextbox("Customs Amount", "Set points amount per loop", 1, function(val) _G.SmoothHubConfig.CustomsAmount = val end)
+MainFarmPage:CreateToggle("Auto Upgrade", "Automatically invests your stat points securely based on your selection and limits", function(state)
+    _G.SmoothHubConfig.AutoUpgradeStats = state
+end)
+
+MainFarmPage:CreateTextbox("Damage", "Set max limit level for Damage (Max: 5000)", 0, function(val) _G.SmoothHubConfig.DamageLimit = val end)
+MainFarmPage:CreateTextbox("Durability", "Set max limit level for Durability (Max: 5000)", 0, function(val) _G.SmoothHubConfig.DurabilityLimit = val end)
+MainFarmPage:CreateTextbox("Stamina", "Set max limit level for Stamina (Max: 150)", 0, function(val) _G.SmoothHubConfig.StaminaLimit = val end)
+MainFarmPage:CreateTextbox("Speed", "Set max limit level for Speed (Max: 150)", 0, function(val) _G.SmoothHubConfig.SpeedLimit = val end)
+
+-- ➕ เพิ่ม Status แสดงค่าสเตตัสจริงแบบเรียลไทม์ไว้ล่างสุดของหมวด Auto Upgrade Stats
+local StatStatusObj = MainFarmPage:CreateStatus("Stats Status", "Damage: 0 | Durability: 0 | Stamina: 0 | Speed: 0", "Real-time character stats tracking.")
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            local statFolder = LocalPlayer:FindFirstChild("Stat")
+            local dmg, dur, sta, spd = 0, 0, 0, 0
+            
+            if statFolder then
+                local dObj = statFolder:FindFirstChild("Damage")
+                if dObj then dmg = dObj.Value end
+                
+                local duObj = statFolder:FindFirstChild("Durability")
+                if duObj then dur = duObj.Value end
+                
+                local sObj = statFolder:FindFirstChild("Stamina")
+                if sObj then sta = sObj.Value end
+                
+                local spObj = statFolder:FindFirstChild("ความเร็ว") or statFolder:FindFirstChild("Speed")
+                if spObj then spd = spObj.Value end
+            elseif LocalPlayer:FindFirstChild("PlayerStats") then
+                local ps = LocalPlayer.PlayerStats
+                if ps:FindFirstChild("Damage") then dmg = ps.Damage.Value end
+                if ps:FindFirstChild("Durability") then dur = ps.Durability.Value end
+                if ps:FindFirstChild("Stamina") then sta = ps.Stamina.Value end
+                if ps:FindFirstChild("Speed") then spd = ps.Speed.Value end
+            end
+            
+            if StatStatusObj and StatStatusObj.SetText then
+                StatStatusObj.SetText(string.format("Dmg: %d | Dur: %d | Sta: %d | Spd: %d", dmg, dur, sta, spd))
+            end
+        end)
+    end
+end)
+
 
 local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 20, "Window |Ui | Kanom Tokyo", false)
 
@@ -2364,7 +2881,7 @@ PlayerPage:CreateToggle("Enable WalkSpeed", "Turn on or off custom walk speed mo
 	end
 end)
 
-PlayerPage:CreateSlider("WalkSpeed", "Adjust your character's movement speed.", 16, 300, 16, function(value)
+PlayerPage:CreateSlider("WalkSpeed", "Adjust your character's movement speed.", 16, 1000, 16, function(value)
 	_G.SmoothHubConfig.WalkSpeed = value
 end)
 
@@ -2377,7 +2894,7 @@ PlayerPage:CreateToggle("Enable JumpPower", "Turn on or off custom jump power mo
 	end
 end)
 
-PlayerPage:CreateSlider("JumpPower", "Adjust your character's jump height power.", 50, 500, 50, function(value)
+PlayerPage:CreateSlider("JumpPower", "Adjust your character's jump height power.", 50, 1000, 50, function(value)
 	_G.SmoothHubConfig.JumpPower = value
 end)
 
@@ -2385,7 +2902,7 @@ PlayerPage:CreateToggle("Fly", "Allows your character to fly around freely.", fu
 	ToggleFly(state)
 end)
 
-PlayerPage:CreateSlider("FlySpeed", "Adjust your flight movement speed.", 10, 300, 50, function(value)
+PlayerPage:CreateSlider("FlySpeed", "Adjust your flight movement speed.", 10, 1000, 50, function(value)
 	_G.SmoothHubConfig.FlySpeed = value
 end)
 
@@ -2460,7 +2977,6 @@ end)
 print("SmoothHub UI Loaded Successfully!")
 end
 
--- 🌀 ระบบหน้าจอโหลดโลโก้ค่ายของคุณเอง (แบบรูปภาพ)
 local function PlayLoadingLogo(callback)
     local LoadGui = Instance.new("ScreenGui")
     LoadGui.Name = "SmoothHub_LoadGui"
@@ -2487,13 +3003,10 @@ local function PlayLoadingLogo(callback)
     LogoImage.ScaleType = Enum.ScaleType.Fit 
     LogoImage.Parent = LoadFrame
 
-    -- เอฟเฟกต์เฟดอินให้รูปค่อยๆ ปรากฏขึ้นมา
     local tweenInfoIn = TweenInfo.new(2.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     TweenService:Create(LogoImage, tweenInfoIn, {ImageTransparency = 0}):Play()
 
-    -- หน่วงเวลาโชว์โลโก้ (5.6 วินาที)
     task.delay(5.6, function()
-        -- เอฟเฟกต์เฟดเอาต์โลโก้
         local tweenInfoOut = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
         local fadeOut = TweenService:Create(LogoImage, tweenInfoOut, {ImageTransparency = 1})
         fadeOut:Play()
@@ -2501,7 +3014,6 @@ local function PlayLoadingLogo(callback)
         fadeOut.Completed:Wait()
         LoadGui:Destroy()
 
-        -- 🛠 เริ่มจำลองการโหลดเมนู UI ต่อเนื่องทันที (พร้อมเพิ่มปุ่มสไตล์ MacBook แดง เหลือง เขียว)
         local MenuLoadGui = Instance.new("ScreenGui")
         MenuLoadGui.Name = "SmoothHub_MenuLoadGui"
         MenuLoadGui.Parent = CoreGui
@@ -2527,7 +3039,6 @@ local function PlayLoadingLogo(callback)
         BoxStroke.Thickness = 1.5
         BoxStroke.Parent = Box
 
-        -- 🔴🟡🟢 ส่วนเพิ่มปุ่มควบคุมสไตล์ MacBook (Mac Window Controls)
         local MenuWindowControls = Instance.new("Frame")
         MenuWindowControls.Name = "WindowControls"
         MenuWindowControls.Size = UDim2.new(0, 80, 0, 20)
@@ -2601,7 +3112,6 @@ local function PlayLoadingLogo(callback)
         BarFillCorner.CornerRadius = UDim.new(1, 0)
         BarFillCorner.Parent = BarFill
 
-        -- แอนิเมชันวิ่งโหลดแถบสถานะ (แบ่งเป็นสเตจต่างๆ สมจริง)
         task.spawn(function()
             local tween1 = TweenService:Create(BarFill, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.35, 0, 1, 0)})
             tween1:Play()
@@ -2616,11 +3126,10 @@ local function PlayLoadingLogo(callback)
             local tween3 = TweenService:Create(BarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)})
             tween3:Play()
             tween3.Completed:Wait()
-            StatusText.TextColor3 = Color3.fromRGB(40, 220, 100) -- ปรับเป็นสีเขียว
+            StatusText.TextColor3 = Color3.fromRGB(40, 220, 100) 
             StatusText.Text = "Ready!"
             task.wait(3)
 
-            -- เฟดเอ้าท์หน้าจอโหลดเมนู UI ออกไป
             local fadeInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
             TweenService:Create(Box, fadeInfo, {BackgroundTransparency = 1}):Play()
             TweenService:Create(Title, fadeInfo, {TextTransparency = 1}):Play()
@@ -2632,7 +3141,6 @@ local function PlayLoadingLogo(callback)
             finalFade.Completed:Wait()
             MenuLoadGui:Destroy()
 
-            -- เรียกใช้งานฟังก์ชันสร้าง UI หลักเมื่อโหลดเมนูเสร็จสิ้น
             if callback then
                 callback()
             end
@@ -2640,7 +3148,6 @@ local function PlayLoadingLogo(callback)
     end)
 end
 
--- 🛑 เรียกใช้งานฟังก์ชันโหลดโลโก้ และรันต่อด้วยระบบโหลดเมนู UI
 PlayLoadingLogo(function()
     BuildUI()
 end)
