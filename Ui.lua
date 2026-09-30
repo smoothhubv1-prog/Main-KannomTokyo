@@ -1432,7 +1432,6 @@ function NewPageClass(targetCanvas)
 		return lastContainer
 	end
 
-	-- 📌 ฟังก์ชัน CreateStatus ขยายความกว้างเป็น 320 เพื่อรองรับข้อความยาวๆ เช่น I'm farming at the lvl 600-700 spot right now
 	function PageObj:CreateStatus(statusName, defaultText, statusDesc)
 		local currentStatus = defaultText or "Off"
 		local hasDesc = statusDesc and statusDesc ~= ""
@@ -1459,7 +1458,7 @@ function NewPageClass(targetCanvas)
 		end
 
 		local WidgetTitle = Instance.new("TextLabel")
-		WidgetTitle.Size = UDim2.new(1, -330, 0, hasDesc and 24 or 50) -- ปรับเผื่อพื้นที่ให้ StatusText ยาวๆ
+		WidgetTitle.Size = UDim2.new(1, -330, 0, hasDesc and 24 or 50)
 		WidgetTitle.Position = UDim2.new(0, 14, 0, hasDesc and 11 or 0)
 		WidgetTitle.BackgroundTransparency = 1
 		WidgetTitle.FontFace = SFProMediumFont
@@ -1472,7 +1471,7 @@ function NewPageClass(targetCanvas)
 
 		if hasDesc then
 			local WidgetDesc = Instance.new("TextLabel")
-			WidgetDesc.Size = UDim2.new(1, -330, 0, 18) -- ปรับเผื่อพื้นที่ให้ StatusText ยาวๆ
+			WidgetDesc.Size = UDim2.new(1, -330, 0, 18)
 			WidgetDesc.Position = UDim2.new(0, 14, 0, 35)
 			WidgetDesc.BackgroundTransparency = 1
 			WidgetDesc.FontFace = SFProMediumFont
@@ -1486,11 +1485,11 @@ function NewPageClass(targetCanvas)
 
 		local StatusText = Instance.new("TextLabel")
 		StatusText.Name = "StatusText"
-		StatusText.Size = UDim2.new(0, 320, 1, 0) -- ขยายความกว้างจาก 100 เป็น 320
-		StatusText.Position = UDim2.new(1, -334, 0, 0) -- ขยับตำแหน่งชิดขวาพอดี
+		StatusText.Size = UDim2.new(0, 320, 1, 0)
+		StatusText.Position = UDim2.new(1, -334, 0, 0)
 		StatusText.BackgroundTransparency = 1
 		StatusText.FontFace = SFProMediumFont
-		StatusText.TextSize = 12 -- ปรับขนาดตัวหนังสือเล็กลงเล็กน้อยเพื่อให้แสดงข้อความยาวๆ ได้พอดี
+		StatusText.TextSize = 12
 		StatusText.TextColor3 = Color3.fromRGB(150, 165, 170)
 		StatusText.TextXAlignment = Enum.TextXAlignment.Right
 		StatusText.TextYAlignment = Enum.TextYAlignment.Center
@@ -2461,4 +2460,187 @@ end)
 print("SmoothHub UI Loaded Successfully!")
 end
 
-BuildUI()
+-- 🌀 ระบบหน้าจอโหลดโลโก้ค่ายของคุณเอง (แบบรูปภาพ)
+local function PlayLoadingLogo(callback)
+    local LoadGui = Instance.new("ScreenGui")
+    LoadGui.Name = "SmoothHub_LoadGui"
+    LoadGui.Parent = CoreGui
+    LoadGui.ResetOnSpawn = false
+    LoadGui.DisplayOrder = 10000000
+
+    local LoadFrame = Instance.new("Frame")
+    LoadFrame.Name = "LoadFrame"
+    LoadFrame.Size = UDim2.new(0, 350, 0, 350) 
+    LoadFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    LoadFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    LoadFrame.BackgroundTransparency = 1
+    LoadFrame.Parent = LoadGui
+
+    local LogoImage = Instance.new("ImageLabel")
+    LogoImage.Name = "LogoImage"
+    LogoImage.Size = UDim2.new(1, 0, 1, 0)
+    LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
+    LogoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+    LogoImage.BackgroundTransparency = 1
+    LogoImage.Image = "rbxassetid://119784799552033" 
+    LogoImage.ImageTransparency = 1
+    LogoImage.ScaleType = Enum.ScaleType.Fit 
+    LogoImage.Parent = LoadFrame
+
+    -- เอฟเฟกต์เฟดอินให้รูปค่อยๆ ปรากฏขึ้นมา
+    local tweenInfoIn = TweenInfo.new(2.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    TweenService:Create(LogoImage, tweenInfoIn, {ImageTransparency = 0}):Play()
+
+    -- หน่วงเวลาโชว์โลโก้ (5.6 วินาที)
+    task.delay(5.6, function()
+        -- เอฟเฟกต์เฟดเอาต์โลโก้
+        local tweenInfoOut = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        local fadeOut = TweenService:Create(LogoImage, tweenInfoOut, {ImageTransparency = 1})
+        fadeOut:Play()
+
+        fadeOut.Completed:Wait()
+        LoadGui:Destroy()
+
+        -- 🛠 เริ่มจำลองการโหลดเมนู UI ต่อเนื่องทันที (พร้อมเพิ่มปุ่มสไตล์ MacBook แดง เหลือง เขียว)
+        local MenuLoadGui = Instance.new("ScreenGui")
+        MenuLoadGui.Name = "SmoothHub_MenuLoadGui"
+        MenuLoadGui.Parent = CoreGui
+        MenuLoadGui.ResetOnSpawn = false
+        MenuLoadGui.DisplayOrder = 10000000
+
+        local Box = Instance.new("Frame")
+        Box.Size = UDim2.new(0, 320, 0, 110)
+        Box.AnchorPoint = Vector2.new(0.5, 0.5)
+        Box.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Box.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        Box.BackgroundTransparency = 0.2
+        Box.BorderSizePixel = 0
+        Box.Parent = MenuLoadGui
+
+        local BoxCorner = Instance.new("UICorner")
+        BoxCorner.CornerRadius = UDim.new(0, 12)
+        BoxCorner.Parent = Box
+
+        local BoxStroke = Instance.new("UIStroke")
+        BoxStroke.Color = Color3.fromRGB(10, 132, 255)
+        BoxStroke.Transparency = 0.5
+        BoxStroke.Thickness = 1.5
+        BoxStroke.Parent = Box
+
+        -- 🔴🟡🟢 ส่วนเพิ่มปุ่มควบคุมสไตล์ MacBook (Mac Window Controls)
+        local MenuWindowControls = Instance.new("Frame")
+        MenuWindowControls.Name = "WindowControls"
+        MenuWindowControls.Size = UDim2.new(0, 80, 0, 20)
+        MenuWindowControls.Position = UDim2.new(0, 12, 0, 10)
+        MenuWindowControls.BackgroundTransparency = 1
+        MenuWindowControls.Parent = Box
+
+        local MenuControlsLayout = Instance.new("UIListLayout")
+        MenuControlsLayout.FillDirection = Enum.FillDirection.Horizontal
+        MenuControlsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        MenuControlsLayout.Padding = UDim.new(0, 6)
+        MenuControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        MenuControlsLayout.Parent = MenuWindowControls
+
+        local macColors = {
+            Color3.fromRGB(255, 95, 86),
+            Color3.fromRGB(255, 189, 46),
+            Color3.fromRGB(39, 201, 63)
+        }
+
+        for _, col in ipairs(macColors) do
+            local dot = Instance.new("Frame")
+            dot.Size = UDim2.new(0, 11, 0, 11)
+            dot.BackgroundColor3 = col
+            dot.BorderSizePixel = 0
+            dot.Parent = MenuWindowControls
+
+            local dotCorner = Instance.new("UICorner")
+            dotCorner.CornerRadius = UDim.new(1, 0)
+            dotCorner.Parent = dot
+        end
+
+        local Title = Instance.new("TextLabel")
+        Title.Size = UDim2.new(1, 0, 0, 30)
+        Title.Position = UDim2.new(0, 0, 0, 12)
+        Title.BackgroundTransparency = 1
+        Title.FontFace = SFProBoldFont
+        Title.TextSize = 14
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.Text = "Loading..."
+        Title.Parent = Box
+
+        local StatusText = Instance.new("TextLabel")
+        StatusText.Size = UDim2.new(1, 0, 0, 20)
+        StatusText.Position = UDim2.new(0, 0, 0, 42)
+        StatusText.BackgroundTransparency = 1
+        StatusText.FontFace = SFProMediumFont
+        StatusText.TextSize = 12
+        StatusText.TextColor3 = Color3.fromRGB(150, 165, 170)
+        StatusText.Text = "Initializing settings..."
+        StatusText.Parent = Box
+
+        local BarBg = Instance.new("Frame")
+        BarBg.Size = UDim2.new(1, -40, 0, 8)
+        BarBg.Position = UDim2.new(0, 20, 0, 75)
+        BarBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        BarBg.BorderSizePixel = 0
+        BarBg.Parent = Box
+
+        local BarBgCorner = Instance.new("UICorner")
+        BarBgCorner.CornerRadius = UDim.new(1, 0)
+        BarBgCorner.Parent = BarBg
+
+        local BarFill = Instance.new("Frame")
+        BarFill.Size = UDim2.new(0, 0, 1, 0)
+        BarFill.BackgroundColor3 = Color3.fromRGB(10, 132, 255)
+        BarFill.BorderSizePixel = 0
+        BarFill.Parent = BarBg
+
+        local BarFillCorner = Instance.new("UICorner")
+        BarFillCorner.CornerRadius = UDim.new(1, 0)
+        BarFillCorner.Parent = BarFill
+
+        -- แอนิเมชันวิ่งโหลดแถบสถานะ (แบ่งเป็นสเตจต่างๆ สมจริง)
+        task.spawn(function()
+            local tween1 = TweenService:Create(BarFill, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.35, 0, 1, 0)})
+            tween1:Play()
+            tween1.Completed:Wait()
+            StatusText.Text = "Loading themes & variables..."
+
+            local tween2 = TweenService:Create(BarFill, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.75, 0, 1, 0)})
+            tween2:Play()
+            tween2.Completed:Wait()
+            StatusText.Text = "Building user interface..."
+
+            local tween3 = TweenService:Create(BarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)})
+            tween3:Play()
+            tween3.Completed:Wait()
+            StatusText.TextColor3 = Color3.fromRGB(40, 220, 100) -- ปรับเป็นสีเขียว
+            StatusText.Text = "Ready!"
+            task.wait(1.5)
+
+            -- เฟดเอ้าท์หน้าจอโหลดเมนู UI ออกไป
+            local fadeInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+            TweenService:Create(Box, fadeInfo, {BackgroundTransparency = 1}):Play()
+            TweenService:Create(Title, fadeInfo, {TextTransparency = 1}):Play()
+            TweenService:Create(StatusText, fadeInfo, {TextTransparency = 1}):Play()
+            TweenService:Create(BarBg, fadeInfo, {BackgroundTransparency = 1}):Play()
+            local finalFade = TweenService:Create(BarFill, fadeInfo, {BackgroundTransparency = 1})
+            finalFade:Play()
+
+            finalFade.Completed:Wait()
+            MenuLoadGui:Destroy()
+
+            -- เรียกใช้งานฟังก์ชันสร้าง UI หลักเมื่อโหลดเมนูเสร็จสิ้น
+            if callback then
+                callback()
+            end
+        end)
+    end)
+end
+
+-- 🛑 เรียกใช้งานฟังก์ชันโหลดโลโก้ และรันต่อด้วยระบบโหลดเมนู UI
+PlayLoadingLogo(function()
+    BuildUI()
+end)
