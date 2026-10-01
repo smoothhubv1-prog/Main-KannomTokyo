@@ -20,6 +20,7 @@ _G.SmoothHubConfig = {
     AntiAFK = true,
     AutoFarmLevelGhoul = false,
 	AutoFarmLevelCCG = false,
+    EnableFarmMonster = false, -- เพิ่มตัวแปรสำหรับเปิด/ปิด Farm Monster
     CurrentTheme = "Dark",
     MinimizeKey = Enum.KeyCode.B,
     StreamerMode = true,
@@ -227,7 +228,7 @@ pcall(function()
     end
 end)
 
--- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats (เชื่อมต่อ BridgeNet2 และเช็ค Stat จากเกมจริง)
+-- ➕ ระบบทำงานเบื้องหลัง: Auto Upgrade Stats
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -248,7 +249,6 @@ task.spawn(function()
                             local limit = limits[statName] or 0
                             local currentStatVal = 0
                             
-                            -- ดึงค่า Stat ปัจจุบันของผู้เล่นจากโฟลเดอร์ Stat ในเกมจริง (รองรับกรณี Speed เป็นภาษาไทย "ความเร็ว")
                             local success, val = pcall(function()
                                 local statFolder = LocalPlayer:FindFirstChild("Stat")
                                 if statFolder then
@@ -681,7 +681,7 @@ SleepFrame.MouseButton1Click:Connect(function()
     end
 end)
 
--- 🔔 ระบบแจ้งเตือนข้างจอ (Notification Toast System with MacBook Controls & Live Animation - Top to Bottom)
+-- 🔔 ระบบแจ้งเตือนข้างจอ
 local NotifGui = Instance.new("ScreenGui")
 NotifGui.Name = "SmoothHub_NotificationGui"
 NotifGui.Parent = CoreGui
@@ -694,13 +694,14 @@ NotifContainer.Size = UDim2.new(0, 320, 1, -20)
 NotifContainer.Position = UDim2.new(1, -335, 0, 10)
 NotifContainer.BackgroundTransparency = 1
 NotifContainer.BorderSizePixel = 0
-NotifContainer.ScrollBarThickness = 0
+NotifContainer.ScrollingEnabled = true
+NotifContainer.ElasticBehavior = Enum.ElasticBehavior.Always
 NotifContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 NotifContainer.Parent = NotifGui
 
 local NotifLayout = Instance.new("UIListLayout")
 NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
-NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top -- เรียงจากบนลงล่าง
+NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 NotifLayout.Padding = UDim.new(0, 8)
 NotifLayout.Parent = NotifContainer
 
@@ -727,7 +728,6 @@ local function ShowRedeemNotification(codeText, statusTitle)
     ToastStroke.Thickness = 1
     ToastStroke.Parent = Toast
 
-    -- ปุ่มสไตล์ MacBook (แดง เขียว เหลือง)
     local MacDotsContainer = Instance.new("Frame")
     MacDotsContainer.Size = UDim2.new(0, 50, 0, 12)
     MacDotsContainer.Position = UDim2.new(0, 12, 0, 10)
@@ -742,9 +742,9 @@ local function ShowRedeemNotification(codeText, statusTitle)
     DotsLayout.Parent = MacDotsContainer
 
     local dotColors = {
-        Color3.fromRGB(255, 95, 86),   -- แดง
-        Color3.fromRGB(255, 189, 46), -- เหลือง
-        Color3.fromRGB(39, 201, 63)   -- เขียว
+        Color3.fromRGB(255, 95, 86),
+        Color3.fromRGB(255, 189, 46),
+        Color3.fromRGB(39, 201, 63)
     }
 
     for _, col in ipairs(dotColors) do
@@ -767,7 +767,7 @@ local function ShowRedeemNotification(codeText, statusTitle)
     TitleLabel.TextSize = 13
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.Text = "Redeeming..." -- เริ่มต้นด้วยสถานะกำลังโหลด
+    TitleLabel.Text = "Redeeming..."
     TitleLabel.Parent = Toast
 
     local DescLabel = Instance.new("TextLabel")
@@ -781,7 +781,6 @@ local function ShowRedeemNotification(codeText, statusTitle)
     DescLabel.Text = "Code: " .. tostring(codeText)
     DescLabel.Parent = Toast
 
-    -- หลอดโหลดจิ๋วเพิ่มชีวิตชีวา (Live Loading Bar)
     local LoadBarBg = Instance.new("Frame")
     LoadBarBg.Size = UDim2.new(1, 0, 0, 3)
     LoadBarBg.Position = UDim2.new(0, 0, 1, -3)
@@ -795,26 +794,22 @@ local function ShowRedeemNotification(codeText, statusTitle)
     LoadBarFill.BorderSizePixel = 0
     LoadBarFill.Parent = LoadBarBg
 
-    -- แอนิเมชันเปิดตัว
     Toast.Position = UDim2.new(1, 40, 0, 0)
     TweenService:Create(Toast, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
 
-    -- วิ่งหลอดโหลด
     TweenService:Create(LoadBarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(1, 0, 1, 0)
     }):Play()
 
-    -- เปลี่ยนเป็นสถานะสำเร็จเมื่อโหลดเต็ม
     task.delay(0.5, function()
         if Toast and Toast.Parent then
             TitleLabel.Text = statusTitle or "Redeemed Code"
-            LoadBarFill.BackgroundColor3 = Color3.fromRGB(39, 201, 63) -- เปลี่ยนเป็นสีเขียว
+            LoadBarFill.BackgroundColor3 = Color3.fromRGB(39, 201, 63)
         end
     end)
 
-    -- ให้แสดงค้างไว้ 3 วินาทีแล้วเลื่อนหลบหายไป
     task.delay(10, function()
         if Toast and Toast.Parent then
             local outTween = TweenService:Create(Toast, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
@@ -1807,6 +1802,7 @@ function NewPageClass(targetCanvas)
 		local configKey = toggleName:match("Anti%-AFK") and "AntiAFK" 
 			or toggleName:match("Ghoul") and "AutoFarmLevelGhoul" 
 			or toggleName:match("CCG") and "AutoFarmLevelCCG"
+			or toggleName:match("Enable Farm Monster") and "EnableFarmMonster"
 			or toggleName:match("Fast Attack") and "FastAttack"
 			or toggleName:match("Streamer Mode") and "StreamerMode"
 			or toggleName:match("Enable FPS Lock") and "EnableFPSLock"
@@ -2378,7 +2374,9 @@ function NewPageClass(targetCanvas)
 		DropdownListFrame.BackgroundTransparency = 1
 		DropdownListFrame.BorderSizePixel = 0
 		DropdownListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-		DropdownListFrame.ScrollBarThickness = 3
+		DropdownListFrame.ScrollBarThickness = 5
+		DropdownListFrame.ScrollingEnabled = true
+		DropdownListFrame.ElasticBehavior = Enum.ElasticBehavior.Always
 		DropdownListFrame.Visible = false
 		DropdownListFrame.ZIndex = 500
 		DropdownListFrame.Parent = ScreenGui
@@ -2401,7 +2399,7 @@ function NewPageClass(targetCanvas)
 		for _, opt in ipairs(optionsList) do
 			local OptionBtn = Instance.new("TextButton")
 			OptionBtn.Name = "Option_" .. opt
-			OptionBtn.Size = UDim2.new(1, 0, 0, 28)
+			OptionBtn.Size = UDim2.new(1, 0, 0, 30)
 			OptionBtn.BackgroundTransparency = 1
 			OptionBtn.BorderSizePixel = 0
 			OptionBtn.AutoButtonColor = false
@@ -2493,7 +2491,7 @@ function NewPageClass(targetCanvas)
 			
 			local absPos = DropdownButton.AbsolutePosition
 			local absSize = DropdownButton.AbsoluteSize
-			local targetHeight = math.min(#optionsList * 28, 160)
+			local targetHeight = math.min(#optionsList * 30, 160)
 			
 			if activeTween then activeTween:Cancel() end
 			local animInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
@@ -2663,13 +2661,15 @@ function NewPageClass(targetCanvas)
 
 		local DropdownListFrame = Instance.new("ScrollingFrame")
 		DropdownListFrame.Name = "DropdownListFrame"
-		DropdownListFrame.Size = UDim2.new(0, 140, 0, 0)
+		DropdownListFrame.Size = UDim2.new(0, 220, 0, 0)
 		DropdownListFrame.Position = UDim2.new(1, -150, 1, -10)
 		DropdownListFrame.BackgroundColor3 = Color3.fromRGB(22, 35, 38)
 		DropdownListFrame.BackgroundTransparency = 1
 		DropdownListFrame.BorderSizePixel = 0
 		DropdownListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-		DropdownListFrame.ScrollBarThickness = 3
+		DropdownListFrame.ScrollBarThickness = 5
+		DropdownListFrame.ScrollingEnabled = true
+		DropdownListFrame.ElasticBehavior = Enum.ElasticBehavior.Always
 		DropdownListFrame.Visible = false
 		DropdownListFrame.ZIndex = 500
 		DropdownListFrame.Parent = ScreenGui
@@ -2693,7 +2693,7 @@ function NewPageClass(targetCanvas)
 		for _, opt in ipairs(optionsList) do
 			local OptionBtn = Instance.new("TextButton")
 			OptionBtn.Name = "Option_" .. opt
-			OptionBtn.Size = UDim2.new(1, 0, 0, 28)
+			OptionBtn.Size = UDim2.new(1, 0, 0, 30)
 			OptionBtn.BackgroundTransparency = 1
 			OptionBtn.BorderSizePixel = 0
 			OptionBtn.AutoButtonColor = false
@@ -2765,22 +2765,31 @@ function NewPageClass(targetCanvas)
 			isOpenDropdown = not isOpenDropdown
 			local absPos = DropdownButton.AbsolutePosition
 			local absSize = DropdownButton.AbsoluteSize
-			local targetHeight = math.min(#optionsList * 28, 160)
+			local targetWidth = 220
+			local targetHeight = math.min(#optionsList * 30, 180)
 			
 			if activeTween then activeTween:Cancel() end
 			local animInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 			
 			if isOpenDropdown then
-				DropdownListFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+				local viewportSize = Camera.ViewportSize
+				local posY = absPos.Y + absSize.Y + 4
+				if posY + targetHeight > viewportSize.Y - 20 then
+					posY = absPos.Y - targetHeight - 4
+				end
+				
+				local posX = absPos.X + absSize.X - targetWidth
+				
+				DropdownListFrame.Position = UDim2.new(0, posX, 0, posY)
 				DropdownListFrame.Visible = true
 				activeTween = TweenService:Create(DropdownListFrame, animInfo, {
-					Size = UDim2.new(0, absSize.X, 0, targetHeight),
+					Size = UDim2.new(0, targetWidth, 0, targetHeight),
 					BackgroundTransparency = 0.15
 				})
 				activeTween:Play()
 			else
 				activeTween = TweenService:Create(DropdownListFrame, animInfo, {
-					Size = UDim2.new(0, absSize.X, 0, 0),
+					Size = UDim2.new(0, targetWidth, 0, 0),
 					BackgroundTransparency = 1
 				})
 				activeTween:Play()
@@ -2808,7 +2817,7 @@ function NewPageClass(targetCanvas)
 					if activeTween then activeTween:Cancel() end
 					local closeAnim = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 					activeTween = TweenService:Create(DropdownListFrame, closeAnim, {
-						Size = UDim2.new(0, btnSize.X, 0, 0),
+						Size = UDim2.new(0, 220, 0, 0),
 						BackgroundTransparency = 1
 					})
 					activeTween:Play()
@@ -2991,9 +3000,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 SmoothHub:CreateCategory("IN GAME", 1)
-SmoothHub:CreateCategory("SETTINGS", 3)
-
-local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main Farm", 2, "Main | Kanom Tokyo", true)
+local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main", 2, "Main | Kanom Tokyo", true)
+local MultiFarmPage = SmoothHub:CreatePage("rbxassetid://116026669119316", "Monster", 3, "Multi Farm | Kanom Tokyo", false)
+SmoothHub:CreateCategory("SETTINGS", 10)
+local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 11, "Window |Ui | Kanom Tokyo", false)
+local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 12, "Player | Kanom Tokyo", false)
+local AdvancedPage = SmoothHub:CreatePage("rbxassetid://114046757018442", "Advanced System", 13, "Advanced | Kanom Tokyo", false)
 
 -- 🎁 ระบบ Redeem Code
 MainFarmPage:CreateSection("🎁", "Redeem Code", "Redeem active promotional codes for rewards.")
@@ -3048,7 +3060,6 @@ MainFarmPage:CreateButton("Redeem All Codes", "Automatically redeem all availabl
                     end
                 end)
                 
-                -- แสดงแจ้งเตือนพร้อมฟังก์ชันโหลดเรียงจากบนลงล่าง
                 ShowRedeemNotification(codeText, "Redeemed Code Successfully")
                 
                 task.wait(0.25)
@@ -3137,7 +3148,189 @@ task.spawn(function()
 end)
 
 
-local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 20, "Window |Ui | Kanom Tokyo", false)
+local MultiFarmSection = MultiFarmPage:CreateSection("🩸", "Farm Monster", "Configure multiple farming options simultaneously.")
+
+MultiFarmPage:CreateMultiSelectDropdown("Monster Selection","Choose which monsters you want to farm automatically",
+  {
+      "Human [Lv.1-50]",
+      "Athlete [Lv.1-50]",
+      "Rank 2 Investigator [Lv.50-Lv.150]",
+      "Bulk Ghoul [Lv.150-250]",
+      "Rank 1 Investigator [Lv.250-350]",
+      "Serpent Ghoul [Lv.350-400]",
+      "Rin Ghoul [Lv.400-450]",
+      "First class Investigator [Lv.450-500]",
+      "Aogiri [Lv.500-550]",
+      "Akira [Lv.550-600]",
+      "Enforcer [Lv.600-Lv.700]",
+      "Phantom [Lv.700-Lv.800]",
+      "Fighter Ghoul [Lv.800-900]",
+      "Sparkling Wing Ghoul [Lv.900-1000]",
+      "Factor [Lv.1000-1100]",
+      "Faulty Tatara Ghoul [Lv.1100-1200]"
+  }, {}, function(selectedTable)
+    _G.SmoothHubConfig.MonsterSelection = selectedTable
+end)
+MultiFarmPage:CreateToggle("Enable Farm Monster", "Turn on or off automatic monster farming based on your selection.", function(state)
+    _G.SmoothHubConfig.EnableFarmMonster = state
+end)
+_G.MonsterStatusObj = MultiFarmPage:CreateStatus("Monster Status", "Idle", "Shows current operational state for Monster farm.")
+
+MultiFarmPage:CreateSection("🗡️", "Monster Drop Information", "List of all monsters and their dropped items.")
+
+local monsterDropData = {
+    {
+        Name = "Human [Lv.1-50]", 
+        Desc = "Starter monsters suited for levels 1-50 players. ", 
+        Drops = {"rbxassetid://120046812439061","rbxassetid://120046812439061","rbxassetid://120046812439061",}
+    },
+    {
+        Name = "Athlete [Lv.1-50]", 
+        Desc = "Frenzied Athlete [Lv.1-50]", 
+        Drops = {"rbxassetid://120046812439061","rbxassetid://120046812439061","rbxassetid://120046812439061",}
+    },
+    {
+        Name = "Rank 2 Investigator [Lv.50-Lv.150]", 
+        Desc = "Rank 2 Investigator [Lv.X] – Moderate defense and health.", 
+        Drops = {"rbxassetid://92283511719944"}
+    },
+    {
+        Name = "Bulk Ghoul [Lv.150-250]", 
+        Desc = "Giant Ghoul – High damage output, ideal for mid-game leveling.", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://74190062784992"}
+    },
+    {
+        Name = "Rank 1 Investigator [Lv.250-350]", 
+        Desc = "Rank 1 Investigator – Enhanced combat capabilities.", 
+        Drops = {"rbxassetid://92283511719944","rbxassetid://96209699024942",}
+    },
+    {
+        Name = "Serpent Ghoul [Lv.350-400]", 
+        Desc = "Serpent Ghoul – Features unique item drop rates.", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://114742713136372","rbxassetid://133392082813980",}
+    },
+    {
+        Name = "Rin Ghoul [Lv.400-450]", 
+        Desc = "Rinkaku Ghoul – High agility and continuous attacks.", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://72380617677891","rbxassetid://133392082813980",}
+    },
+    {
+        Name = "First class Investigator [Lv.450-500]", 
+        Desc = "First-Class Investigator – Highly skilled and extremely dangerous.", 
+        Drops = {"rbxassetid://92283511719944","rbxassetid://96209699024942",}
+    },
+    {
+        Name = "Aogiri [Lv.500-550]", 
+        Desc = "Aogiri Tree Member – Elite Ghoul Soldier. ", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://107493323425484",}
+    },
+    {
+        Name = "Akira [Lv.550-600]", 
+        Desc = "Special Monster: Akira – Strikes with rapid and swift movements.", 
+        Drops = {"rbxassetid://107493323425484",}
+    },
+    {
+        Name = "Enforcer [Lv.600-Lv.700]", 
+        Desc = "High-Level Area Enforcer ", 
+        Drops = {"rbxassetid://92283511719944","rbxassetid://96209699024942",}
+    },
+    {
+        Name = "Phantom [Lv.700-Lv.800]", 
+        Desc = "Phantom: A mysterious entity featuring high-speed strikes.", 
+        Drops = {"rbxassetid://92283511719944","rbxassetid://96209699024942",}
+    },
+    {
+        Name = "Fighter Ghoul [Lv.800-900]", 
+        Desc = "Brawler Ghoul – Melee combatant with heavy damage.", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://107493323425484",}
+    },
+    {
+        Name = "Sparkling Wing Ghoul [Lv.900-1000]", 
+        Desc = "Shining Wing Ghoul – High-level near max cap, unleashes wide-area light bursts. ", 
+        Drops = {"rbxassetid://104254551964189","rbxassetid://107493323425484",}
+    },
+    {
+        Name = "Factor [Lv.1000-1100]", 
+        Desc = "Factor – High-level endgame monster.", 
+        Drops = {"rbxassetid://120046812439061","rbxassetid://120046812439061","rbxassetid://120046812439061",}
+    },
+    {
+        Name = "Faulty Tatara Ghoul [Lv.1100-1200]", 
+        Desc = "Flawed Tatara: The most formidable max-tier monster currently.", 
+        Drops = {"rbxassetid://104254551964189",}
+    }
+}
+
+for _, monster in ipairs(monsterDropData) do
+    local container = MultiFarmPage:CreateSection("", "", "")
+    
+    local CardFrame = Instance.new("Frame")
+    CardFrame.Name = monster.Name .. "_Card"
+    CardFrame.Size = UDim2.new(1, 0, 0, 0)
+    CardFrame.BackgroundTransparency = 1
+    CardFrame.Parent = container
+
+    -- ชื่อมอนสเตอร์
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, -28, 0, 24)
+    NameLabel.Position = UDim2.new(0, 14, 0, 8)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.FontFace = SFProBoldFont
+    NameLabel.TextSize = 13
+    NameLabel.TextColor3 = Color3.fromRGB(255, 165, 43)
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.Text = "👹 " .. monster.Name
+    NameLabel.Parent = CardFrame
+
+    -- คำอธิบายใต้ชื่อมอนสเตอร์ (เพิ่มส่วนนี้)
+    local DescLabel = Instance.new("TextLabel")
+    DescLabel.Size = UDim2.new(1, -28, 0, 18)
+    DescLabel.Position = UDim2.new(0, 14, 0, 32)
+    DescLabel.BackgroundTransparency = 1
+    DescLabel.FontFace = SFProMediumFont
+    DescLabel.TextSize = 11
+    DescLabel.TextColor3 = Color3.fromRGB(150, 165, 170)
+    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescLabel.Text = monster.Desc or ""
+    DescLabel.Parent = CardFrame
+
+    local ImageContainer = Instance.new("Frame")
+    ImageContainer.Name = "ImageContainer"
+    ImageContainer.Size = UDim2.new(1, -28, 0, 0)
+    -- ขยับตำแหน่ง Y ลงมาหน่อยเพื่อให้มีพื้นที่ให้กับคำอธิบาย
+    ImageContainer.Position = UDim2.new(0, 14, 0, 56)
+    ImageContainer.BackgroundTransparency = 1
+    ImageContainer.Parent = CardFrame
+
+    local ItemGrid = Instance.new("UIGridLayout")
+    ItemGrid.CellSize = UDim2.new(0, 45, 0, 45)
+    ItemGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+    ItemGrid.SortOrder = Enum.SortOrder.LayoutOrder
+    ItemGrid.Parent = ImageContainer
+
+    ItemGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ImageContainer.Size = UDim2.new(1, -28, 0, ItemGrid.AbsoluteContentSize.Y)
+        -- บวกเผื่อพื้นที่สำหรับส่วนหัวและคำอธิบายด้านบน
+        CardFrame.Size = UDim2.new(1, 0, 0, ItemGrid.AbsoluteContentSize.Y + 66)
+    end)
+
+    for _, imgId in ipairs(monster.Drops) do
+        local ItemBox = Instance.new("ImageLabel")
+        ItemBox.Size = UDim2.new(0, 45, 0, 45)
+        ItemBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        ItemBox.Image = imgId
+        ItemBox.Parent = ImageContainer
+
+        local BoxCorner = Instance.new("UICorner")
+        BoxCorner.CornerRadius = UDim.new(0, 6)
+        BoxCorner.Parent = ItemBox
+
+        local BoxStroke = Instance.new("UIStroke")
+        BoxStroke.Color = Color3.fromRGB(60, 60, 60)
+        BoxStroke.Thickness = 1
+        BoxStroke.Parent = ItemBox
+    end
+end
 
 AppearancePage:CreateSection("🎨", "Customs Color", "Customize the appearance and visual style of the interface.")
 AppearancePage:CreateDropdown("Theme", "The whole palette, not just light or dark.", {
@@ -3158,7 +3351,7 @@ AppearancePage:CreateToggle("Streamer Mode", "Swaps real names for random fake o
 	_G.SmoothHubConfig.StreamerMode = state
 end)
 
-local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 21, "Player | Kanom Tokyo", false)
+
 
 PlayerPage:CreateSection("🏃", "Movement", "Customize your character's speed, jump height, and mobility.")
 
@@ -3206,7 +3399,7 @@ PlayerPage:CreateToggle("Enable RGB", "Turns on or off the rainbow RGB glowing o
 	ToggleRGB(state)
 end)
 
-local AdvancedPage = SmoothHub:CreatePage("rbxassetid://114046757018442", "Advanced System", 22, "Advanced | Kanom Tokyo", false)
+
 AdvancedPage:CreateSection("⚙", "System Control", "Advanced settings and anti-afk configuration.")
 
 AdvancedPage:CreateToggle("Anti-AFK System", "Prevent getting kicked after being AFK for 20 minutes.", function(state)
