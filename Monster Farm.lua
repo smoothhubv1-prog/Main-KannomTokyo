@@ -177,7 +177,7 @@ task.spawn(function()
     end
 end)
 
--- ระบบสร้างและจัดการกรอบ RGB ให้ตัวละคร
+-- ระบบสร้างและจัดการกรอบ RGB ให้ตัวละคร (ทำงานเมื่อเปิดฟาร์มมอนสเตอร์)
 local rgbHighlight = nil
 task.spawn(function()
     while true do
@@ -194,7 +194,6 @@ task.spawn(function()
                 rgbHighlight.Parent = character
             end
             
-            -- คำนวณสี RGB วนลูปตามเวลา
             local hue = (tick() % 5) / 5
             rgbHighlight.OutlineColor = Color3.fromHSV(hue, 1, 1)
         else
@@ -249,6 +248,58 @@ task.spawn(function()
     end
 end)
 
+-- ====================================
+-- ระบบกด E (สำหรับ Farm Monster / AutoFarm)
+-- ====================================
+local function pressE()
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+local function performThreePresses()
+    print("--- เริ่มกด E จำนวน 5 ครั้ง ---")
+    for i = 1, 5 do
+        if not _G.SmoothHubConfig.EnableFarmMonster then break end
+        print("กด E ครั้งที่ " .. i)
+        pressE()
+        if i < 5 then
+            task.wait(0.5)
+        end
+    end
+    print("--- กดครบแล้ว ---")
+end
+
+task.spawn(function()
+    while true do
+        if not _G.SmoothHubConfig.EnableFarmMonster then
+            task.wait(0.5)
+            continue
+        end
+
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid")
+        
+        task.wait(1)
+        if _G.SmoothHubConfig.EnableFarmMonster then
+            performThreePresses()
+        end
+        
+        local isAlive = true
+        local diedConnection
+        diedConnection = humanoid.Died:Connect(function()
+            isAlive = false
+            if diedConnection then
+                diedConnection:Disconnect()
+            end
+        end)
+        
+        while isAlive and character.Parent and _G.SmoothHubConfig.EnableFarmMonster do
+            task.wait(1)
+        end
+    end
+end)
+
 -- ระบบอัปเดต Monster Status บน UI
 task.spawn(function()
     while true do
@@ -287,4 +338,4 @@ task.spawn(function()
     end
 end)
 
-print("SmoothHub Custom Monster Farm, RGB Highlight & Status Loaded Successfully!")
+print("SmoothHub Custom Monster Farm, RGB Highlight, Key E & Status Loaded Successfully!")
