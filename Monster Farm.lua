@@ -1,9 +1,13 @@
+-- =========================================================================
+-- SmoothHub Custom Monster Farm with Auto Quest System & Auto Close UI
+-- =========================================================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+
 local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 
@@ -16,7 +20,7 @@ _G.SmoothHubConfig = _G.SmoothHubConfig or {
 }
 
 task.spawn(function()
-    while not _G.GhoulStatusObj do
+    while not _G.MonsterStatusObj and not _G.GhoulStatusObj do
         task.wait(0.1)
     end
 end)
@@ -25,7 +29,7 @@ local PlayerFolder = Workspace:WaitForChild("AI/Player", 5)
 local IncludeToGame = Workspace:WaitForChild("IncludeToGame", 5)
 local ZonesFolder = IncludeToGame and IncludeToGame:WaitForChild("Zones", 5)
 
--- กำหนดข้อมูลพิกัดเควสและชื่อมอนสเตอร์จริงในเกม
+-- กำหนดข้อมูลพิกัดเควสและชื่อมอนสเตอร์จริงในเกมสำหรับจับคู่รับเควส
 local QuestConfig = {
     { Names = {"Human", "Athlete"}, CFrame = CFrame.new(84.4766235, 4.73149872, -26.2268448), QuestPathName = "QuestGiver (Lv.1-Lv.50)" },
     { Names = {"Rank 2 Investigator"}, CFrame = CFrame.new(422.288239, 4.73097706, -362.139801), QuestPathName = "QuestGiver (Lv.50-Lv.150)" },
@@ -60,6 +64,58 @@ local function GetPlayerLevel()
     return success and level or 1
 end
 
+-- ฟังก์ชันเช็กว่าปัจจุบันมีเควสแสดงอยู่บนหน้าจอ UI หรือไม่
+local function HasActiveQuest()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        local hud = playerGui:FindFirstChild("HUD")
+        local questUi = hud and hud:FindFirstChild("Quest")
+        if questUi then
+            if questUi.Visible or #questUi:GetChildren() > 0 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- ค้นหาข้อมูลเควสที่ตรงกับมอนสเตอร์ที่ผู้เล่นเลือกใน Dropdown
+local function GetSelectedMonsterNames()
+    local selectedList = {}
+    if _G.SmoothHubConfig.MonsterSelection and type(_G.SmoothHubConfig.MonsterSelection) == "table" then
+        for monsterFullName, isSelected in pairs(_G.SmoothHubConfig.MonsterSelection) do
+            if isSelected then
+                local cleanName = monsterFullName:match("^(.-)%s*%[") or monsterFullName
+                cleanName = cleanName:match("^%s*(.-)%s*$")
+                table.insert(selectedList, cleanName)
+            end
+        end
+    end
+    return selectedList
+end
+
+local function GetCurrentQuestInfo()
+    local selectedMonsters = GetSelectedMonsterNames()
+    if #selectedMonsters > 0 then
+        local firstSelected = selectedMonsters[1]
+        for _, quest in ipairs(QuestConfig) do
+            for _, mName in ipairs(quest.Names) do
+                if firstSelected:lower() == mName:lower() or firstSelected:lower():find(mName:lower()) then
+                    return quest
+                end
+            end
+        end
+    end
+    
+    local level = GetPlayerLevel()
+    for i = #QuestConfig, 1, -1 do
+        if level >= (i - 1) * 100 then
+            return QuestConfig[i]
+        end
+    end
+    return QuestConfig[1]
+end
+
 local function SetupDeathHandler(character)
     isPlayerReadyToFarm = false
     currentTarget = nil
@@ -89,7 +145,7 @@ if LocalPlayer.Character then
     SetupDeathHandler(LocalPlayer.Character)
 end
 
--- เช็ก SafeZone
+-- เช็ก SafeZone ของมอนสเตอร์
 local function IsMonsterInsideSafeZoneFolder(monsterObj)
     local enemyRoot = monsterObj:FindFirstChild("HumanoidRootPart")
     if not enemyRoot or not ZonesFolder then return false end
@@ -108,21 +164,6 @@ local function IsMonsterInsideSafeZoneFolder(monsterObj)
         end
     end
     return false
-end
-
--- ฟังก์ชันดึงรายชื่อมอนสเตอร์ที่ผู้เล่นเลือกจาก Dropdown ในหน้า UI
-local function GetSelectedMonsterNames()
-    local selectedList = {}
-    if _G.SmoothHubConfig.MonsterSelection and type(_G.SmoothHubConfig.MonsterSelection) == "table" then
-        for monsterFullName, isSelected in pairs(_G.SmoothHubConfig.MonsterSelection) do
-            if isSelected then
-                local cleanName = monsterFullName:match("^(.-)%s*%[") or monsterFullName
-                cleanName = cleanName:match("^%s*(.-)%s*$")
-                table.insert(selectedList, cleanName)
-            end
-        end
-    end
-    return selectedList
 end
 
 -- ค้นหามอนสเตอร์เป้าหมายที่ผู้เล่นเลือกฟาร์ม
@@ -178,7 +219,29 @@ task.spawn(function()
     end
 end)
 
--- ระบบสร้างและจัดการกรอบ RGB ให้ตัวละคร (ทำงานเมื่อเปิดฟาร์มมอนสเตอร์)
+-- 🎁 ระบบปิดหน้าต่าง Daily Rewards อัตโนมัติเมื่อเปิดใช้งานฟาร์ม
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if _G.SmoothHubConfig.EnableFarmMonster then
+            pcall(function()
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                if playerGui then
+                    for _, gui in ipairs(playerGui:GetDescendants()) do
+                        if gui:IsA("TextLabel") and (gui.Text == "Daily Rewards" or gui.Text:find("Daily Reward")) then
+                            local rewardFrame = gui:FindFirstAncestorWhichIsA("Frame") or gui:FindFirstAncestorWhichIsA("ImageLabel")
+                            if rewardFrame then
+                                rewardFrame.Visible = false
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ระบบสร้างและจัดการกรอบ RGB ให้ตัวละคร
 local rgbHighlight = nil
 task.spawn(function()
     while true do
@@ -206,7 +269,67 @@ task.spawn(function()
     end
 end)
 
--- ลูปการบินไปฟาร์มมอนสเตอร์ (ถ้ารอมอนเกิด จะบินขึ้นไปลอยตัวหลบบนฟ้าสูงๆ)
+-- 📜 ระบบบินไปรับเควสอัตโนมัติ (ทำงานเมื่อยังไม่มีเควส)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if not _G.SmoothHubConfig.EnableFarmMonster then continue end
+        if not isPlayerReadyToFarm then continue end
+        
+        local character = LocalPlayer.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        
+        if rootPart and not HasActiveQuest() and not isDoingQuest then
+            isDoingQuest = true
+            
+            while not HasActiveQuest() and isPlayerReadyToFarm and _G.SmoothHubConfig.EnableFarmMonster do
+                local char = LocalPlayer.Character
+                local rp = char and char:FindFirstChild("HumanoidRootPart")
+                local questInfo = GetCurrentQuestInfo()
+                
+                if not rp or not questInfo then break end
+                
+                local targetCFrame = questInfo.CFrame - Vector3.new(0, 7, 0)
+                local distance = (targetCFrame.Position - rp.Position).Magnitude
+                
+                if distance > 3 then
+                    local direction = (targetCFrame.Position - rp.Position).Unit
+                    local moveStep = math.min(FLY_SPEED * 0.016, distance)
+                    rp.Velocity = direction * FLY_SPEED
+                    rp.CFrame = rp.CFrame + (direction * moveStep)
+                else
+                    rp.Velocity = Vector3.new(0, 0, 0)
+                    rp.CFrame = targetCFrame
+                    
+                    pcall(function()
+                        local networkFolder = ReplicatedStorage:FindFirstChild("Network")
+                        local questTarget = ReplicatedStorage:FindFirstChild("Modules") 
+                            and ReplicatedStorage.Modules:FindFirstChild("Client") 
+                            and ReplicatedStorage.Modules.Client:FindFirstChild("TalkNpc") 
+                            and ReplicatedStorage.Modules.Client.TalkNpc:FindFirstChild("Quests") 
+                            and ReplicatedStorage.Modules.Client.TalkNpc.Quests[questInfo.QuestPathName] 
+                            and ReplicatedStorage.Modules.Client.TalkNpc.Quests[questInfo.QuestPathName]:FindFirstChild("Quest")
+
+                        if networkFolder and questTarget then
+                            for _, remote in ipairs(networkFolder:GetChildren()) do
+                                if remote:IsA("RemoteEvent") then
+                                    remote:FireServer("RequestQuest", questTarget)
+                                end
+                            end
+                        end
+                    end)
+                end
+                
+                task.wait(0.03)
+            end
+            
+            task.wait(0.5)
+            isDoingQuest = false
+        end
+    end
+end)
+
+-- ลูปการบินไปฟาร์มมอนสเตอร์ หรือบินขึ้นไปลอยตัวหลบบนฟ้าตอนรอมอนเกิด
 task.spawn(function()
     while true do
         task.wait()
@@ -216,7 +339,7 @@ task.spawn(function()
         local character = LocalPlayer.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        if rootPart then
+        if rootPart and HasActiveQuest() and not isDoingQuest then
             if currentTarget then
                 local currentHumanoid = currentTarget:FindFirstChildOfClass("Humanoid")
                 if not currentHumanoid or currentHumanoid.Health <= 0 or IsMonsterInsideSafeZoneFolder(currentTarget) then
@@ -229,14 +352,13 @@ task.spawn(function()
             end
             
             if currentTarget and currentTarget:FindFirstChild("HumanoidRootPart") then
-                -- 🟢 กรณีเจอมอนสเตอร์: บินเข้าหาปกติ
                 local enemyRoot = currentTarget.HumanoidRootPart
                 
                 local posMode = _G.SmoothHubConfig.MonsterFarmPosition or "Down"
-                local offsetVector = Vector3.new(0, -6, 0) -- Down ให้อยู่ข้างบน
+                local offsetVector = Vector3.new(0, -6, 0)
                 
                 if posMode == "Upper" then
-                    offsetVector = Vector3.new(0, 6, 0) -- Upper ให้อยู่ข้างล่าง
+                    offsetVector = Vector3.new(0, 6, 0)
                 end
                 
                 local targetPosition = enemyRoot.Position + offsetVector
@@ -252,7 +374,6 @@ task.spawn(function()
                     rootPart.CFrame = CFrame.new(targetPosition, enemyRoot.Position)
                 end
             else
-                -- 🛡️ กรณีรอมอนสเตอร์เกิด (ไม่มีมอนเป้าหมาย): บินขึ้นไปลอยตัวหลบบนฟ้าสูงๆ (Y + 400)
                 local currentPos = rootPart.Position
                 local skyPosition = Vector3.new(currentPos.X, 400, currentPos.Z)
                 
@@ -272,7 +393,7 @@ task.spawn(function()
 end)
 
 -- ====================================
--- ระบบกด E (สำหรับ Farm Monster / AutoFarm)
+-- ระบบกด E (สำหรับโจมตีอัตโนมัติ)
 -- ====================================
 local function pressE()
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
@@ -281,16 +402,13 @@ local function pressE()
 end
 
 local function performThreePresses()
-    print("--- เริ่มกด E จำนวน 5 ครั้ง ---")
     for i = 1, 5 do
         if not _G.SmoothHubConfig.EnableFarmMonster then break end
-        print("กด E ครั้งที่ " .. i)
         pressE()
         if i < 5 then
             task.wait(0.5)
         end
     end
-    print("--- กดครบแล้ว ---")
 end
 
 task.spawn(function()
@@ -323,7 +441,7 @@ task.spawn(function()
     end
 end)
 
--- ระบบอัปเดต Monster Status บน UI
+-- ระบบอัปเดต Status บน UI
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -335,25 +453,20 @@ task.spawn(function()
                 return
             end
 
-            local selectedCount = 0
             local selectedNames = GetSelectedMonsterNames()
-            for _, _ in ipairs(selectedNames) do
-                selectedCount = selectedCount + 1
-            end
-
-            if selectedCount == 0 then
+            if #selectedNames == 0 then
                 if _G.MonsterStatusObj then
                     _G.MonsterStatusObj.SetText("No Monster Selected", Color3.fromRGB(255, 180, 50))
                 end
                 return
             end
 
-            if currentTarget and currentTarget.Name then
-                if _G.MonsterStatusObj then
+            if _G.MonsterStatusObj then
+                if not HasActiveQuest() then
+                    _G.MonsterStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
+                elseif currentTarget and currentTarget.Name then
                     _G.MonsterStatusObj.SetText("Farming: " .. currentTarget.Name, Color3.fromRGB(40, 220, 100))
-                end
-            else
-                if _G.MonsterStatusObj then
+                else
                     _G.MonsterStatusObj.SetText("Waiting/Hidden in Sky...", Color3.fromRGB(100, 200, 255))
                 end
             end
@@ -361,4 +474,4 @@ task.spawn(function()
     end
 end)
 
-print("SmoothHub Custom Monster Farm with Anti-Admin Sky Hide Loaded Successfully!")
+print("SmoothHub Custom Monster Farm with Auto Quest & Auto Close UI Loaded Successfully!")
