@@ -102,7 +102,7 @@ local QuestConfig = {
     }
 }
 
-local FLY_SPEED = 420
+local FLY_SPEED = 350
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
