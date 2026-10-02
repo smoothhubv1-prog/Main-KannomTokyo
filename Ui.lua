@@ -3101,7 +3101,7 @@ end)
 
 MainFarmPage:CreateSection("❄", "Auto Farm Level", "Seamlessly grinds and gains experience points without stopping.")
 -- สร้าง Dropdown สำหรับเลือก Position ไว้บนสุดของหมวด Auto Farm Level
-MainFarmPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Down", function(selectedOption)
+MainFarmPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Upper", function(selectedOption)
     _G.SmoothHubConfig.FarmPosition = selectedOption
     print("Selected Position:", selectedOption)
 end)
@@ -3207,7 +3207,7 @@ MultiFarmPage:CreateToggle("Enable Farm Monster", "Turn on or off automatic mons
 end)
 _G.MonsterStatusObj = MultiFarmPage:CreateStatus("Monster Status", "Idle", "Shows current operational state for Monster farm.")
 
-MultiFarmPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Down", function(selectedOption)
+MultiFarmPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Upper", function(selectedOption)
     _G.SmoothHubConfig.MonsterFarmPosition = selectedOption
     print("Selected Monster Position:", selectedOption)
 end)
