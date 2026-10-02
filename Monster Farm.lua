@@ -11,7 +11,8 @@ local LocalPlayer = Players.LocalPlayer
 _G.SmoothHubConfig = _G.SmoothHubConfig or { 
     AutoFarmLevelGhoul = false,
     EnableFarmMonster = false,
-    MonsterSelection = {}
+    MonsterSelection = {},
+    MonsterFarmPosition = "Down"
 }
 
 task.spawn(function()
@@ -205,7 +206,7 @@ task.spawn(function()
     end
 end)
 
--- ลูปการบินไปฟาร์มมอนสเตอร์ที่เลือก
+-- ลูปการบินไปฟาร์มมอนสเตอร์ (ถ้ารอมอนเกิด จะบินขึ้นไปลอยตัวหลบบนฟ้าสูงๆ)
 task.spawn(function()
     while true do
         task.wait()
@@ -228,8 +229,17 @@ task.spawn(function()
             end
             
             if currentTarget and currentTarget:FindFirstChild("HumanoidRootPart") then
+                -- 🟢 กรณีเจอมอนสเตอร์: บินเข้าหาปกติ
                 local enemyRoot = currentTarget.HumanoidRootPart
-                local targetPosition = enemyRoot.Position - Vector3.new(0, 6, 0)
+                
+                local posMode = _G.SmoothHubConfig.MonsterFarmPosition or "Down"
+                local offsetVector = Vector3.new(0, -6, 0) -- Down ให้อยู่ข้างบน
+                
+                if posMode == "Upper" then
+                    offsetVector = Vector3.new(0, 6, 0) -- Upper ให้อยู่ข้างล่าง
+                end
+                
+                local targetPosition = enemyRoot.Position + offsetVector
                 
                 local distance = (targetPosition - rootPart.Position).Magnitude
                 if distance > 2 then
@@ -242,7 +252,20 @@ task.spawn(function()
                     rootPart.CFrame = CFrame.new(targetPosition, enemyRoot.Position)
                 end
             else
-                rootPart.Velocity = Vector3.new(0, 0, 0)
+                -- 🛡️ กรณีรอมอนสเตอร์เกิด (ไม่มีมอนเป้าหมาย): บินขึ้นไปลอยตัวหลบบนฟ้าสูงๆ (Y + 400)
+                local currentPos = rootPart.Position
+                local skyPosition = Vector3.new(currentPos.X, 400, currentPos.Z)
+                
+                local skyDistance = (skyPosition - rootPart.Position).Magnitude
+                if skyDistance > 5 then
+                    local direction = (skyPosition - rootPart.Position).Unit
+                    local moveStep = math.min(FLY_SPEED * 0.016, skyDistance)
+                    rootPart.Velocity = direction * FLY_SPEED
+                    rootPart.CFrame = CFrame.new(rootPart.CFrame.Position + (direction * moveStep))
+                else
+                    rootPart.Velocity = Vector3.new(0, 0, 0)
+                    rootPart.CFrame = CFrame.new(skyPosition)
+                end
             end
         end
     end
@@ -331,11 +354,11 @@ task.spawn(function()
                 end
             else
                 if _G.MonsterStatusObj then
-                    _G.MonsterStatusObj.SetText("Searching Target...", Color3.fromRGB(255, 180, 50))
+                    _G.MonsterStatusObj.SetText("Waiting/Hidden in Sky...", Color3.fromRGB(100, 200, 255))
                 end
             end
         end)
     end
 end)
 
-print("SmoothHub Custom Monster Farm, RGB Highlight, Key E & Status Loaded Successfully!")
+print("SmoothHub Custom Monster Farm with Anti-Admin Sky Hide Loaded Successfully!")
