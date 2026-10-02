@@ -3121,7 +3121,7 @@ end)
 
 MainFarmPage:CreateSection("📈", "Auto Upgrade Stats", "Automatically invests your available stat points into your chosen category.")
 
-MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {"Damage"}, function(selectedTable)
+MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {""}, function(selectedTable)
     _G.SmoothHubConfig.StatSelection = selectedTable
 end)
 
