@@ -1,5 +1,5 @@
 --=============================================
--- Auto Farm Level | Ghoul 👹 (Full Fly & Under-Feet Version)
+-- Auto Farm Level | Ghoul 👹 (Full Fly & Sky Hide Version)
 --=============================================
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -11,7 +11,7 @@ local player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 
 -- ประกาศคอนฟิกพื้นฐานเชื่อมกับ UI (ถ้ายังไม่มี)
-_G.SmoothHubConfig = _G.SmoothHubConfig or { AutoFarmLevelGhoul = false }
+_G.SmoothHubConfig = _G.SmoothHubConfig or { AutoFarmLevelGhoul = false, FarmPosition = "Upper" }
 
 task.spawn(function()
     while not _G.GhoulStatusObj do
@@ -449,7 +449,7 @@ task.spawn(function()
                 
                 if not rp then break end
                 
-                -- อยู่ต่ำกว่าจุดเควส 4 หน่วย ป้องกันตัวละครชนกันจนกระเด็น
+                -- อยู่ต่ำกว่าจุดเควส 7 หน่วย ป้องกันตัวละครชนกันจนกระเด็น
                 local targetCFrame = questInfo.CFrame - Vector3.new(0, 7, 0)
                 local distance = (targetCFrame.Position - rp.Position).Magnitude
                 
@@ -491,7 +491,7 @@ task.spawn(function()
 end)
 
 -- ====================================================================
--- 🕹️ ลูปฟาร์มมอนสเตอร์ + ระบบ Fly ไปอยู่ใต้เท้า และหันหน้าเข้าหามอนสเตอร์ทันที
+-- 🕹️ ลูปฟาร์มมอนสเตอร์ + ระบบรองรับเลือก Position & บินหลบบนฟ้าตอนรอมอนเกิด
 -- ====================================================================
 task.spawn(function()
     while true do
@@ -518,26 +518,44 @@ task.spawn(function()
             end
             
             if currentTarget and currentTarget:FindFirstChild("HumanoidRootPart") then
+                -- 🟢 กรณีเจอมอนสเตอร์: บินเข้าหาตามตำแหน่งที่เลือก (Upper / Down)
                 local enemyRoot = currentTarget.HumanoidRootPart
                 
-                -- เซ็ตตำแหน่งให้อยู่ใต้เท้ามอนสเตอร์ และหันหน้าเข้าหามอนสเตอร์ทันทีด้วย CFrame.lookAt
-                local targetPosition = enemyRoot.Position - Vector3.new(0, 6, 0)
-                local lookAtCFrame = CFrame.lookAt(targetPosition, Vector3.new(enemyRoot.Position.X, targetPosition.Y, enemyRoot.Position.Z))
+                local farmPosType = _G.SmoothHubConfig.FarmPosition or "Upper"
+                local offsetHeight = 6
+                
+                local targetPosition
+                if farmPosType == "Upper" then
+                    targetPosition = enemyRoot.Position + Vector3.new(0, offsetHeight, 0)
+                else
+                    targetPosition = enemyRoot.Position - Vector3.new(0, offsetHeight, 0)
+                end
                 
                 local distance = (targetPosition - rootPart.Position).Magnitude
                 if distance > 2 then
                     local direction = (targetPosition - rootPart.Position).Unit
                     local moveStep = math.min(FLY_SPEED * 0.016, distance)
                     rootPart.Velocity = direction * FLY_SPEED
-                    -- บินไปพร้อมกับล็อกองศาการหันหน้าเข้าหามอนสเตอร์ทันที
                     rootPart.CFrame = CFrame.new(rootPart.CFrame.Position + (direction * moveStep), enemyRoot.Position)
                 else
                     rootPart.Velocity = Vector3.new(0, 0, 0)
-                    -- ถึงตำแหน่งแล้วบังคับหันหน้าเข้าหามอนสเตอร์ทันที 100% แบบไม่มีดีเลย์
                     rootPart.CFrame = CFrame.new(targetPosition, enemyRoot.Position)
                 end
             else
-                rootPart.Velocity = Vector3.new(0, 0, 0)
+                -- 🛡️ กรณีรอมอนสเตอร์เกิด: บินขึ้นไปลอยตัวหลบบนฟ้าสูงๆ (Y + 400)
+                local currentPos = rootPart.Position
+                local skyPosition = Vector3.new(currentPos.X, 400, currentPos.Z)
+                
+                local skyDistance = (skyPosition - rootPart.Position).Magnitude
+                if skyDistance > 5 then
+                    local direction = (skyPosition - rootPart.Position).Unit
+                    local moveStep = math.min(FLY_SPEED * 0.016, skyDistance)
+                    rootPart.Velocity = direction * FLY_SPEED
+                    rootPart.CFrame = CFrame.new(rootPart.CFrame.Position + (direction * moveStep))
+                else
+                    rootPart.Velocity = Vector3.new(0, 0, 0)
+                    rootPart.CFrame = CFrame.new(skyPosition)
+                end
             end
         else
             rootPart.Velocity = Vector3.new(0, 0, 0)
@@ -545,7 +563,7 @@ task.spawn(function()
     end
 end)
 
-print("SmoothHub Full Fly & Under-Feet Version Loaded Successfully!")
+print("SmoothHub Full Fly & Sky Hide Support Version Loaded Successfully!")
 
 -- ====================================
 -- ระบบกด E (ทำงานแยกตามปกติ)
@@ -626,7 +644,7 @@ task.spawn(function()
             elseif questInfo == QuestConfig.Lv500 then spotRange = "lvl 500-550"
             elseif questInfo == QuestConfig.Lv550 then spotRange = "lvl 550-600"
             elseif questInfo == QuestConfig.Lv600 then spotRange = "lvl 600-700"
-            elseif questInfo == QuestConfig.Lv700 then spotRange = "lvl 700-800"
+            elseif questInfo ==QuestConfig.Lv700 then spotRange = "lvl 700-800"
             elseif questInfo == QuestConfig.Lv800 then spotRange = "lvl 800-900"
             elseif questInfo == QuestConfig.Lv900 then spotRange = "lvl 900-1000"
             elseif questInfo == QuestConfig.Lv1000 then spotRange = "lvl 1000-1100"
@@ -663,6 +681,8 @@ task.spawn(function()
             if _G.GhoulStatusObj then
                 if not HasActiveQuest() then
                     _G.GhoulStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
+                elseif not currentTarget then
+                    _G.GhoulStatusObj.SetText("Waiting/Hidden in Sky...", Color3.fromRGB(100, 200, 255))
                 else
                     local displayText = "[" .. targetName .. "] " .. countText .. " (" .. spotRange .. ")"
                     _G.GhoulStatusObj.SetText(displayText, Color3.fromRGB(40, 220, 100))
