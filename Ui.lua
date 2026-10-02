@@ -21,6 +21,7 @@ _G.SmoothHubConfig = {
     AutoFarmLevelGhoul = false,
 	AutoFarmLevelCCG = false,
     EnableFarmMonster = false, -- เพิ่มตัวแปรสำหรับเปิด/ปิด Farm Monster
+    EnableAutoBoss = false, -- เพิ่มตัวแปรสำหรับเปิด/ปิด Auto Boss
     CurrentTheme = "Dark",
     MinimizeKey = Enum.KeyCode.B,
     StreamerMode = true,
@@ -1830,6 +1831,7 @@ function NewPageClass(targetCanvas)
 			or toggleName:match("Ghoul") and "AutoFarmLevelGhoul" 
 			or toggleName:match("CCG") and "AutoFarmLevelCCG"
 			or toggleName:match("Enable Farm Monster") and "EnableFarmMonster"
+			or toggleName:match("Auto Boss") and "EnableAutoBoss"
 			or toggleName:match("Fast Attack") and "FastAttack"
 			or toggleName:match("Streamer Mode") and "StreamerMode"
 			or toggleName:match("Enable FPS Lock") and "EnableFPSLock"
@@ -3029,6 +3031,8 @@ end)
 SmoothHub:CreateCategory("IN GAME", 1)
 local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main", 2, "Main | Kanom Tokyo", true)
 local MultiFarmPage = SmoothHub:CreatePage("rbxassetid://116026669119316", "Monster", 3, "Multi Farm | Kanom Tokyo", false)
+local BossPage = SmoothHub:CreatePage("rbxassetid://104254551964189", "Boss", 4, "Boss Farm | Kanom Tokyo", false)
+
 SmoothHub:CreateCategory("SETTINGS", 10)
 local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 11, "Window |Ui | Kanom Tokyo", false)
 local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 12, "Player | Kanom Tokyo", false)
@@ -3100,7 +3104,6 @@ MainFarmPage:CreateButton("Redeem All Codes", "Automatically redeem all availabl
 end)
 
 MainFarmPage:CreateSection("❄", "Auto Farm Level", "Seamlessly grinds and gains experience points without stopping.")
--- สร้าง Dropdown สำหรับเลือก Position ไว้บนสุดของหมวด Auto Farm Level
 MainFarmPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Upper", function(selectedOption)
     _G.SmoothHubConfig.FarmPosition = selectedOption
     print("Selected Position:", selectedOption)
@@ -3121,7 +3124,7 @@ end)
 
 MainFarmPage:CreateSection("📈", "Auto Upgrade Stats", "Automatically invests your available stat points into your chosen category.")
 
-MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {"Damage"}, function(selectedTable)
+MainFarmPage:CreateMultiSelectDropdown("Stat Selection", "Choose which stats to upgrade automatically", {"Damage", "Durability", "Stamina", "Speed"}, {}, function(selectedTable)
     _G.SmoothHubConfig.StatSelection = selectedTable
 end)
 
@@ -3305,7 +3308,6 @@ for _, monster in ipairs(monsterDropData) do
     CardFrame.BackgroundTransparency = 1
     CardFrame.Parent = container
 
-    -- ชื่อมอนสเตอร์
     local NameLabel = Instance.new("TextLabel")
     NameLabel.Size = UDim2.new(1, -28, 0, 24)
     NameLabel.Position = UDim2.new(0, 14, 0, 8)
@@ -3317,7 +3319,6 @@ for _, monster in ipairs(monsterDropData) do
     NameLabel.Text = "👹 " .. monster.Name
     NameLabel.Parent = CardFrame
 
-    -- คำอธิบายใต้ชื่อมอนสเตอร์ (เพิ่มส่วนนี้)
     local DescLabel = Instance.new("TextLabel")
     DescLabel.Size = UDim2.new(1, -28, 0, 18)
     DescLabel.Position = UDim2.new(0, 14, 0, 32)
@@ -3332,7 +3333,6 @@ for _, monster in ipairs(monsterDropData) do
     local ImageContainer = Instance.new("Frame")
     ImageContainer.Name = "ImageContainer"
     ImageContainer.Size = UDim2.new(1, -28, 0, 0)
-    -- ขยับตำแหน่ง Y ลงมาหน่อยเพื่อให้มีพื้นที่ให้กับคำอธิบาย
     ImageContainer.Position = UDim2.new(0, 14, 0, 56)
     ImageContainer.BackgroundTransparency = 1
     ImageContainer.Parent = CardFrame
@@ -3345,11 +3345,173 @@ for _, monster in ipairs(monsterDropData) do
 
     ItemGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         ImageContainer.Size = UDim2.new(1, -28, 0, ItemGrid.AbsoluteContentSize.Y)
-        -- บวกเผื่อพื้นที่สำหรับส่วนหัวและคำอธิบายด้านบน
         CardFrame.Size = UDim2.new(1, 0, 0, ItemGrid.AbsoluteContentSize.Y + 66)
     end)
 
     for _, imgId in ipairs(monster.Drops) do
+        local ItemBox = Instance.new("ImageLabel")
+        ItemBox.Size = UDim2.new(0, 45, 0, 45)
+        ItemBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        ItemBox.Image = imgId
+        ItemBox.Parent = ImageContainer
+
+        local BoxCorner = Instance.new("UICorner")
+        BoxCorner.CornerRadius = UDim.new(0, 6)
+        BoxCorner.Parent = ItemBox
+
+        local BoxStroke = Instance.new("UIStroke")
+        BoxStroke.Color = Color3.fromRGB(60, 60, 60)
+        BoxStroke.Thickness = 1
+        BoxStroke.Parent = ItemBox
+    end
+end
+
+-- 👑 เมนู Boss (สร้างส่วนควบคุมสำหรับบอส)
+BossPage:CreateSection("👑", "Boss Normal", "Configure automatic boss farming and tracking options.")
+BossPage:CreateMultiSelectDropdown("Boss Selection", "Choose which bosses to target automatically", {
+    "Kaneki", "Jason", "Ihei Hairu",
+}, {}, function(selectedTable)
+    _G.SmoothHubConfig.BossSelection = selectedTable
+end)
+
+BossPage:CreateToggle("Enable Farm Boss", "Automatically teleport to and defeat selected bosses.", function(state)
+    _G.SmoothHubConfig.EnableAutoBoss = state
+end)
+
+_G.BossStatusObj = BossPage:CreateStatus("Boss Status", "Idle", "Shows current operational state for Boss farm.")
+
+-- 📍 เพิ่ม Dropdown Position ไว้ล่างสุดของหมวดหมู่ Boss Normal
+BossPage:CreateDropdown("Position", "Choose farming direction", {"Upper", "Down"}, "Upper", function(selectedOption)
+    _G.SmoothHubConfig.BossFarmPosition = selectedOption
+    print("Selected Boss Farm Position:", selectedOption)
+end)
+-- ✨ เพิ่มสถานะแยกสำหรับบอสแต่ละตัว เพื่อเช็คว่าเกิดใน Workspace/AI/Player/Boss หรือยัง
+BossPage:CreateSection("📍", "Boss Spawn Status", "Real-time tracker for Kaneki, Jason, and Ihei Hairu status.")
+local KanekiStatusObj = BossPage:CreateStatus("Kaneki Status", "Checking...", "Checks if Kaneki has spawned.")
+local JasonStatusObj = BossPage:CreateStatus("Jason Status", "Checking...", "Checks if Jason has spawned.")
+local IheiStatusObj = BossPage:CreateStatus("Ihei Hairu Status", "Checking...", "Checks if Ihei Hairu has spawned.")
+
+-- 🔍 ระบบลูปเช็คสถานะบอสจาก Workspace.AI/Player.Boss ตามโฟลเดอร์ที่คุณต้องการ
+task.spawn(function()
+    while true do
+        task.wait(1)
+        pcall(function()
+            local bossFolder = workspace:FindFirstChild("AI/Player") and workspace["AI/Player"]:FindFirstChild("Boss")
+            
+            local kanekiSpawned = false
+            local jasonSpawned = false
+            local iheiSpawned = false
+            
+            if bossFolder then
+                for _, obj in ipairs(bossFolder:GetChildren()) do
+                    local nameLower = string.lower(obj.Name)
+                    if string.find(nameLower, "kaneki") then
+                        kanekiSpawned = true
+                    elseif string.find(nameLower, "jason") then
+                        jasonSpawned = true
+                    elseif string.find(nameLower, "ihei") or string.find(nameLower, "hairu") then
+                        iheiSpawned = true
+                    end
+                end
+            end
+            
+            if KanekiStatusObj and KanekiStatusObj.SetText then
+                if kanekiSpawned then
+                    KanekiStatusObj.SetText("Spawned 🟢", Color3.fromRGB(40, 220, 100))
+                else
+                    KanekiStatusObj.SetText("Not Spawned 🔴", Color3.fromRGB(220, 60, 60))
+                end
+            end
+            
+            if JasonStatusObj and JasonStatusObj.SetText then
+                if jasonSpawned then
+                    JasonStatusObj.SetText("Spawned 🟢", Color3.fromRGB(40, 220, 100))
+                else
+                    JasonStatusObj.SetText("Not Spawned 🔴", Color3.fromRGB(220, 60, 60))
+                end
+            end
+            
+            if IheiStatusObj and IheiStatusObj.SetText then
+                if iheiSpawned then
+                    IheiStatusObj.SetText("Spawned 🟢", Color3.fromRGB(40, 220, 100))
+                else
+                    IheiStatusObj.SetText("Not Spawned 🔴", Color3.fromRGB(220, 60, 60))
+                end
+            end
+        end)
+    end
+end)
+
+BossPage:CreateSection("🗡️", "Boss Normal Drop Information", "List of major bosses and their special rewards.")
+
+local bossDropData = {
+    {
+        Name = "Kaneki",
+        Desc = "Aogiri Tree leader – High health and deadly special attacks.",
+        Drops = {"rbxassetid://", "rbxassetid://"}
+    },
+    {
+        Name = "Jason",
+        Desc = "One-Eyed Owl – Extremely powerful boss with high mobility.",
+        Drops = {"rbxassetid://", "rbxassetid://"}
+    },
+    {
+        Name = "Ihei Hairu",
+        Desc = "Jason – Brutal torturer wielding powerful kagune abilities.",
+        Drops = {"rbxassetid://", "rbxassetid://"}
+    }
+}
+
+for _, boss in ipairs(bossDropData) do
+    local container = BossPage:CreateSection("", "", "")
+    
+    local CardFrame = Instance.new("Frame")
+    CardFrame.Name = boss.Name .. "_Card"
+    CardFrame.Size = UDim2.new(1, 0, 0, 0)
+    CardFrame.BackgroundTransparency = 1
+    CardFrame.Parent = container
+
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, -28, 0, 24)
+    NameLabel.Position = UDim2.new(0, 14, 0, 8)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.FontFace = SFProBoldFont
+    NameLabel.TextSize = 13
+    NameLabel.TextColor3 = Color3.fromRGB(255, 65, 88)
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.Text = "👑 " .. boss.Name
+    NameLabel.Parent = CardFrame
+
+    local DescLabel = Instance.new("TextLabel")
+    DescLabel.Size = UDim2.new(1, -28, 0, 18)
+    DescLabel.Position = UDim2.new(0, 14, 0, 32)
+    DescLabel.BackgroundTransparency = 1
+    DescLabel.FontFace = SFProMediumFont
+    DescLabel.TextSize = 11
+    DescLabel.TextColor3 = Color3.fromRGB(150, 165, 170)
+    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescLabel.Text = boss.Desc or ""
+    DescLabel.Parent = CardFrame
+
+    local ImageContainer = Instance.new("Frame")
+    ImageContainer.Name = "ImageContainer"
+    ImageContainer.Size = UDim2.new(1, -28, 0, 0)
+    ImageContainer.Position = UDim2.new(0, 14, 0, 56)
+    ImageContainer.BackgroundTransparency = 1
+    ImageContainer.Parent = CardFrame
+
+    local ItemGrid = Instance.new("UIGridLayout")
+    ItemGrid.CellSize = UDim2.new(0, 45, 0, 45)
+    ItemGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+    ItemGrid.SortOrder = Enum.SortOrder.LayoutOrder
+    ItemGrid.Parent = ImageContainer
+
+    ItemGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ImageContainer.Size = UDim2.new(1, -28, 0, ItemGrid.AbsoluteContentSize.Y)
+        CardFrame.Size = UDim2.new(1, 0, 0, ItemGrid.AbsoluteContentSize.Y + 66)
+    end)
+
+    for _, imgId in ipairs(boss.Drops) do
         local ItemBox = Instance.new("ImageLabel")
         ItemBox.Size = UDim2.new(0, 45, 0, 45)
         ItemBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -3445,7 +3607,6 @@ AdvancedPage:CreateToggle("Auto Rejoin", "Automatically reconnect to the server 
 	_G.SmoothHubConfig.AutoRejoin = state
 end)
 
--- 🛡️ เพิ่มปุ่ม Anti Admin ไว้ในหมวด System Control เรียบร้อยแล้ว
 AdvancedPage:CreateToggle("Anti Admin", "Automatically hops to a new server if an admin joins.", function(state)
 	_G.SmoothHubConfig.AntiAdmin = state
 end)
@@ -3617,7 +3778,7 @@ local function PlayLoadingLogo(callback)
         local BarBg = Instance.new("Frame")
         BarBg.Size = UDim2.new(1, -40, 0, 8)
         BarBg.Position = UDim2.new(0, 20, 0, 75)
-        BarBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        BarBg.BackgroundColor3 = Color3.Spacer or Color3.fromRGB(35, 35, 35)
         BarBg.BorderSizePixel = 0
         BarBg.Parent = Box
 
