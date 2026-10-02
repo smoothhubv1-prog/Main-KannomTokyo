@@ -19,8 +19,12 @@ if game.PlaceId == TargetPlaceId then
             -- โหลดสคริปต์ Anti AFK (ตัดเลขขยะสั้นลงแล้ว )
     local AntiAFK = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Anti%20AFK.lua"
     loadstring(game:HttpGet(AntiAFK))()
+     -- โหลดสคริปต์ MonsterFarm 
     local MonsterFarm = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Monster%20Farm.lua"
     loadstring(game:HttpGet(MonsterFarm))()
+         -- โหลดสคริปต์ MonsterFarm 
+    local BossFarmNormal = "https://raw.githubusercontent.com/smoothhubv1-prog/Main-KannomTokyo/refs/heads/main/Farm%20Boss%20Normal.lua"
+    loadstring(game:HttpGet(BossFarmNormal))()
     
     
 else
