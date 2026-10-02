@@ -27,6 +27,7 @@ _G.SmoothHubConfig = {
     EnableFPSLock = true,
     FPSLock = 240,
     AutoRejoin = true,
+    AntiAdmin = true, -- เพิ่มค่าเริ่มต้นของ Anti Admin
     FastMode = false,
     BlackScreen = false,
     WhiteScreen = false,
@@ -313,6 +314,31 @@ task.spawn(function()
             end)
         end
     end)
+end)
+
+-- 🛡️ ระบบ Anti Admin (ตรวจจับแอดมินและย้ายเซิร์ฟเวอร์หนีอัตโนมัติ)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        pcall(function()
+            if _G.SmoothHubConfig.AntiAdmin then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer then
+                        local nameLower = string.lower(player.Name)
+                        local dispLower = string.lower(player.DisplayName)
+                        
+                        if string.find(nameLower, "admin") or string.find(dispLower, "admin") or 
+                           string.find(nameLower, "owner") or string.find(dispLower, "owner") or
+                           string.find(nameLower, "mod") or string.find(dispLower, "mod") or
+                           player:GetRankInGroup(game.PlaceId) >= 254 then
+                            
+                            TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                        end
+                    end
+                end
+            end
+        end)
+    end
 end)
 
 local flyConnection
@@ -1800,6 +1826,7 @@ function NewPageClass(targetCanvas)
 		local callback = callback or function() end
 		
 		local configKey = toggleName:match("Anti%-AFK") and "AntiAFK" 
+			or toggleName:match("Anti Admin") and "AntiAdmin"
 			or toggleName:match("Ghoul") and "AutoFarmLevelGhoul" 
 			or toggleName:match("CCG") and "AutoFarmLevelCCG"
 			or toggleName:match("Enable Farm Monster") and "EnableFarmMonster"
@@ -3414,10 +3441,15 @@ AdvancedPage:CreateToggle("Anti-AFK System", "Prevent getting kicked after being
 	_G.SmoothHubConfig.AntiAFK = state
 end)
 
-
 AdvancedPage:CreateToggle("Auto Rejoin", "Automatically reconnect to the server if disconnected or kicked.", function(state)
 	_G.SmoothHubConfig.AutoRejoin = state
 end)
+
+-- 🛡️ เพิ่มปุ่ม Anti Admin ไว้ในหมวด System Control เรียบร้อยแล้ว
+AdvancedPage:CreateToggle("Anti Admin", "Automatically hops to a new server if an admin joins.", function(state)
+	_G.SmoothHubConfig.AntiAdmin = state
+end)
+
 
 AdvancedPage:CreateSection("💤", "Sleep mode", "Cover screen to save power or rest display.")
 
