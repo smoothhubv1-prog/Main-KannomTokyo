@@ -48,7 +48,7 @@ local QuestConfig = {
     { Names = {"Faulty Tatara Ghoul"}, CFrame = CFrame.new(708.203613, 4.73383665, 1255.29858), QuestPathName = "QuestGiver (Lv.1100-Lv.1200)" }
 }
 
-local FLY_SPEED = 250
+local FLY_SPEED = 200
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
