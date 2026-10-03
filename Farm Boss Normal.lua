@@ -20,7 +20,7 @@ local PlayerFolder = Workspace:WaitForChild("AI/Player", 5)
 local BossFolder = PlayerFolder and PlayerFolder:WaitForChild("Boss", 5)
 local ZonesFolder = Workspace:WaitForChild("IncludeToGame", 5) and Workspace.IncludeToGame:WaitForChild("Zones", 5)
 
-local FLY_SPEED = 350
+local FLY_SPEED = 250
 local currentBossTarget = nil
 local isPlayerReadyToFarm = false
 
