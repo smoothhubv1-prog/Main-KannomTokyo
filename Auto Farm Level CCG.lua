@@ -102,7 +102,7 @@ local QuestConfig = {
     }
 }
 
-local FLY_SPEED = 200
+local FLY_SPEED = 150
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
@@ -477,7 +477,7 @@ task.spawn(function()
                     end)
                 end
                 
-                task.wait(0.05)
+                task.wait()
             end
             
             task.wait(0.5)
