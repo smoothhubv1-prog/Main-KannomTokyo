@@ -3031,7 +3031,7 @@ end)
 SmoothHub:CreateCategory("IN GAME", 1)
 local MainFarmPage = SmoothHub:CreatePage("rbxassetid://95299401214721", "Main", 2, "Main | Kanom Tokyo", true)
 local MultiFarmPage = SmoothHub:CreatePage("rbxassetid://116026669119316", "Monster", 3, "Multi Farm | Kanom Tokyo", false)
-local BossPage = SmoothHub:CreatePage("rbxassetid://104254551964189", "Boss", 4, "Boss Farm | Kanom Tokyo", false)
+local BossPage = SmoothHub:CreatePage("rbxassetid://93134866924688", "Boss", 4, "Boss Farm | Kanom Tokyo", false)
 
 SmoothHub:CreateCategory("SETTINGS", 10)
 local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 11, "Window |Ui | Kanom Tokyo", false)
