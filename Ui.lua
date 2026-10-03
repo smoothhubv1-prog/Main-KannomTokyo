@@ -3037,6 +3037,7 @@ SmoothHub:CreateCategory("SETTINGS", 10)
 local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 11, "Window |Ui | Kanom Tokyo", false)
 local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 12, "Player | Kanom Tokyo", false)
 local AdvancedPage = SmoothHub:CreatePage("rbxassetid://114046757018442", "Advanced System", 13, "Advanced | Kanom Tokyo", false)
+local ServerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Server", 14, "Server | Kanom Tokyo", false)
 
 -- 🎁 ระบบ Redeem Code
 MainFarmPage:CreateSection("🎁", "Redeem Code", "Redeem active promotional codes for rewards.")
@@ -3658,7 +3659,76 @@ AdvancedPage:CreateSlider("FPS Lock", "Limit your maximum frames per second to s
 	end)
 end)
 
-print("SmoothHub UI Loaded Successfully!")
+-- 🌐 เมนู Server (ข้อมูลเซิร์ฟเวอร์และเครื่องมือจัดการ)
+ServerPage:CreateSection("🌐", "Server Information", "Display current server details and identifiers.")
+
+-- แสดง GameId
+local GameIdStatus = ServerPage:CreateStatus("GameId", tostring(game.GameId), "The unique ID of this game universe.")
+
+-- แสดง PlaceId
+local PlaceIdStatus = ServerPage:CreateStatus("PlaceId", tostring(game.PlaceId), "The specific place ID of this server instance.")
+
+ServerPage:CreateSection("📋", "Server Actions", "Quick tools to copy identifiers or switch servers.")
+
+-- ปุ่มคัดลอก JobId สำหรับแชร์ให้เพื่อนเข้าเซิร์ฟเดียวกัน
+ServerPage:CreateButton("Copy JobId", "Copy current JobId to clipboard for friends to join.", function()
+    pcall(function()
+        if setclipboard then
+            setclipboard(tostring(game.JobId))
+            print("Copied JobId to clipboard: " .. tostring(game.JobId))
+        else
+            warn("Your executor does not support setclipboard!")
+        end
+    end)
+end)
+
+-- ปุ่ม Rejoin เซิร์ฟเวอร์เดิม
+ServerPage:CreateButton("Rejoin Server", "Reconnect to the same server instance.", function()
+    pcall(function()
+        local TeleportService = game:GetService("TeleportService")
+        local LocalPlayer = game:GetService("Players").LocalPlayer
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
+end)
+
+-- ปุ่มสุ่มเปลี่ยนเซิร์ฟเวอร์ใหม่ (Server Hop)
+ServerPage:CreateButton("Server Hop", "Teleport to a different server to find a new one.", function()
+    pcall(function()
+        local TeleportService = game:GetService("TeleportService")
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        
+        local servers = {}
+        local cursor = ""
+        
+        repeat
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor ~= "" and "&cursor=" .. cursor or "")
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+            
+            if success and result and result.data then
+                for _, srv in ipairs(result.data) do
+                    if type(srv) == "table" and srv.id ~= game.JobId and srv.playing < srv.maxPlayers then
+                        table.insert(servers, srv.id)
+                    end
+                end
+                cursor = result.nextPageCursor
+            else
+                break
+            end
+        until #servers > 0 or not cursor
+        
+        if #servers > 0 then
+            local randomId = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, randomId, LocalPlayer)
+        else
+            warn("Could not find an available server to hop into.")
+        end
+    end)
+end)
+
 end
 
 local function PlayLoadingLogo(callback)
