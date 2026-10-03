@@ -3448,17 +3448,17 @@ local bossDropData = {
     {
         Name = "Kaneki",
         Desc = "Aogiri Tree leader – High health and deadly special attacks.",
-        Drops = {"rbxassetid://", "rbxassetid://"}
+        Drops = {"rbxassetid://133413487108852", "rbxassetid://114742713136372","rbxassetid://72380617677891","rbxassetid://127783512312376"}
     },
     {
         Name = "Jason",
         Desc = "One-Eyed Owl – Extremely powerful boss with high mobility.",
-        Drops = {"rbxassetid://", "rbxassetid://"}
+        Drops = {"rbxassetid://114742713136372", "rbxassetid://72380617677891","rbxassetid://137471364600083","rbxassetid://127464277300963",}
     },
     {
         Name = "Ihei Hairu",
         Desc = "Jason – Brutal torturer wielding powerful kagune abilities.",
-        Drops = {"rbxassetid://", "rbxassetid://"}
+        Drops = {"rbxassetid://107493323425484", "rbxassetid://108935483904389"}
     }
 }
 
