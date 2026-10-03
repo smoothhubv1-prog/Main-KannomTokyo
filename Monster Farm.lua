@@ -48,7 +48,7 @@ local QuestConfig = {
     { Names = {"Faulty Tatara Ghoul"}, CFrame = CFrame.new(708.203613, 4.73383665, 1255.29858), QuestPathName = "QuestGiver (Lv.1100-Lv.1200)" }
 }
 
-local FLY_SPEED = 150
+local FLY_SPEED = 250
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
@@ -287,7 +287,7 @@ end)
 -- ระบบปิดหน้าต่าง Daily Rewards อัตโนมัติ
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.1)
         if _G.SmoothHubConfig.EnableFarmMonster then
             pcall(function()
                 local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -337,7 +337,7 @@ end)
 -- ระบบบินไปรับเควสอัตโนมัติ (ตรวจสอบความถูกต้องของเควส ถือผิดอันจะทำการสละเควสแล้วไปรับใหม่)
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.01)
         if not _G.SmoothHubConfig.EnableFarmMonster then continue end
         if not isPlayerReadyToFarm then continue end
         
@@ -345,7 +345,7 @@ task.spawn(function()
         if HasActiveQuest() and not IsActiveQuestCorrect() then
             AbandonCurrentQuest()
             currentTarget = nil
-            task.wait(0.5)
+            task.wait(0.01)
         end
         
         local character = LocalPlayer.Character
@@ -392,10 +392,10 @@ task.spawn(function()
                     end)
                 end
                 
-                task.wait(0.01)
+                task.wait(0.02)
             end
             
-            task.wait(0.5)
+            task.wait(0.001)
             isDoingQuest = false
         end
     end
@@ -517,7 +517,7 @@ end)
 -- ระบบอัปเดต Status บน UI
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.1)
         pcall(function()
             if not _G.SmoothHubConfig.EnableFarmMonster then
                 if _G.MonsterStatusObj then
