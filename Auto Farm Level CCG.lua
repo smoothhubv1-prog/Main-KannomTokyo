@@ -322,7 +322,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.01)
+        task.wait(1)
         if _G.SmoothHubConfig.AutoFarmLevelCCG then
             pcall(function()
                 local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -421,7 +421,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.001)
+        task.wait(0.8)
         if not _G.SmoothHubConfig.AutoFarmLevelCCG then continue end
         if not isPlayerReadyToFarm then continue end
         
@@ -429,7 +429,7 @@ task.spawn(function()
         if HasActiveQuest() and not IsActiveQuestCorrect() then
             AbandonCurrentQuest()
             currentTarget = nil
-            task.wait(0.001)
+            task.wait(0.8)
         end
         
         local character = LocalPlayer.Character
@@ -480,7 +480,7 @@ task.spawn(function()
                 task.wait(0.02)
             end
             
-            task.wait(0.001)
+            task.wait(0.01)
             isDoingQuest = false
         end
     end
@@ -619,7 +619,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.5)
         pcall(function()
             if not _G.SmoothHubConfig.AutoFarmLevelCCG then
                 if _G.CCGStatusObj then
