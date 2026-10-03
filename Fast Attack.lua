@@ -55,6 +55,6 @@ task.spawn(function()
         end
         
         -- หน่วงเวลาสั้นๆ เพื่อความเสถียร
-        task.wait(0.0001)
+        task.wait(0.00000000000000000001)
     end
 end)
