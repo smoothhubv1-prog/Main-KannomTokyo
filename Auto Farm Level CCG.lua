@@ -146,56 +146,6 @@ local function GetPlayerLevel()
     return 1
 end
 
--- ฟังก์ชันเช็กชื่อเควสจากหน้าจอ UI
-local function GetActiveQuestNameFromGui()
-    local playerLevel = GetPlayerLevel()
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if playerGui then
-        local hud = playerGui:FindFirstChild("HUD")
-        local questUi = hud and hud:FindFirstChild("Quest")
-        if questUi and questUi.Visible then
-            for _, desc in ipairs(questUi:GetDescendants()) do
-                if desc:IsA("TextLabel") and desc.Text ~= "" then
-                    local textLower = desc.Text:lower()
-                    
-                    if (textLower:find("human") or textLower:find("athlete") or textLower:find("lv.1-") ) and playerLevel < 50 then
-                        return "new1"
-                    elseif (textLower:find("rank 2 investigator") or textLower:find("lv.50")) and playerLevel < 150 then
-                        return "Lv50"
-                    elseif (textLower:find("bulk ghoul") or textLower:find("lv.150")) and playerLevel < 250 then
-                        return "Lv150"
-                    elseif (textLower:find("rank 1 investigator") or textLower:find("lv.250")) and playerLevel < 350 then
-                        return "Lv250"
-                    elseif (textLower:find("serpent ghoul") or textLower:find("lv.350")) and playerLevel < 400 then
-                        return "Lv350"
-                    elseif (textLower:find("rin ghoul") or textLower:find("lv.400")) and playerLevel < 450 then
-                        return "Lv400"
-                    elseif (textLower:find("first class investigator") or textLower:find("lv.450")) and playerLevel < 500 then
-                        return "Lv450"
-                    elseif (textLower:find("aogiri") or textLower:find("lv.500")) and playerLevel < 550 then
-                        return "Lv500"
-                    elseif (textLower:find("akira") or textLower:find("lv.550")) and playerLevel < 600 then
-                        return "Lv550"
-                    elseif (textLower:find("enforcer") or textLower:find("lv.600")) and playerLevel < 700 then
-                        return "Lv600"
-                    elseif (textLower:find("phantom") or textLower:find("lv.700")) and playerLevel < 800 then
-                        return "Lv700"
-                    elseif (textLower:find("fighter ghoul") or textLower:find("lv.800")) and playerLevel < 900 then
-                        return "Lv800"
-                    elseif (textLower:find("sparkling wing ghoul") or textLower:find("lv.900")) and playerLevel < 1000 then
-                        return "Lv900"
-                    elseif (textLower:find("factor") or textLower:find("lv.1000")) and playerLevel < 1100 then
-                        return "Lv1000"
-                    elseif textLower:find("faulty tatara ghoul") or textLower:find("lv.1100") then
-                        return "Lv1100"
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
 -- ฟังก์ชันเช็กว่ามีเควสอยู่หรือไม่
 local function HasActiveQuest()
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
@@ -204,11 +154,91 @@ local function HasActiveQuest()
         local questUi = hud and hud:FindFirstChild("Quest")
         if questUi then
             if questUi.Visible or #questUi:GetChildren() > 0 then
-                return true
+                local hasText = false
+                for _, desc in ipairs(questUi:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Text ~= "" and not desc.Text:lower():find("quest") then
+                        hasText = true
+                        break
+                    end
+                end
+                return hasText
             end
         end
     end
     return false
+end
+
+-- ฟังก์ชันเลือกข้อมูลเควสตามเลเวลปัจจุบัน (ให้สอดคล้องกับเลเวลผู้เล่นจริง ป้องกันการดึงเควสมั่ว)
+local function GetCurrentQuestInfo()
+    if currentTarget and currentTarget.Name then
+        for _, qData in pairs(QuestConfig) do
+            for _, mName in ipairs(qData.TargetMonsterNames) do
+                if currentTarget.Name:lower() == mName:lower() or currentTarget.Name:lower():find(mName:lower()) then
+                    return qData
+                end
+            end
+        end
+    end
+
+    local level = GetPlayerLevel()
+    
+    if level >= 1100 then return QuestConfig.Lv1100
+    elseif level >= 1000 then return QuestConfig.Lv1000
+    elseif level >= 900 then return QuestConfig.Lv900
+    elseif level >= 800 then return QuestConfig.Lv800
+    elseif level >= 700 then return QuestConfig.Lv700
+    elseif level >= 600 then return QuestConfig.Lv600
+    elseif level >= 550 then return QuestConfig.Lv550
+    elseif level >= 500 then return QuestConfig.Lv500
+    elseif level >= 450 then return QuestConfig.Lv450
+    elseif level >= 400 then return QuestConfig.Lv400
+    elseif level >= 350 then return QuestConfig.Lv350
+    elseif level >= 250 then return QuestConfig.Lv250
+    elseif level >= 150 then return QuestConfig.Lv150
+    elseif level >= 50 then return QuestConfig.Lv50
+    else return QuestConfig.new1
+    end
+end
+
+-- ฟังก์ชันตรวจสอบว่าเควสปัจจุบันบนหน้าจอตรงกับเป้าหมายหรือไม่
+local function IsActiveQuestCorrect()
+    local targetQuestInfo = GetCurrentQuestInfo()
+    if not targetQuestInfo then return true end
+
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        local hud = playerGui:FindFirstChild("HUD")
+        local questUi = hud and hud:FindFirstChild("Quest")
+        if questUi and questUi.Visible then
+            for _, desc in ipairs(questUi:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text ~= "" then
+                    local textLower = desc.Text:lower()
+                    for _, mName in ipairs(targetQuestInfo.TargetMonsterNames) do
+                        if textLower:find(mName:lower()) then
+                            return true -- เควสตรงกันแล้ว
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false -- เควสไม่ตรง
+end
+
+-- ฟังก์ชันยกเลิก/ลบเควสเก่าทิ้งผ่าน RemoteEvent
+local function AbandonCurrentQuest()
+    pcall(function()
+        local networkFolder = ReplicatedStorage:FindFirstChild("Network")
+        if networkFolder then
+            for _, remote in ipairs(networkFolder:GetChildren()) do
+                if remote:IsA("RemoteEvent") then
+                    remote:FireServer("AbandonQuest")
+                    remote:FireServer("RemoveQuest")
+                    remote:FireServer("CancelQuest")
+                end
+            end
+        end
+    end)
 end
 
 -- จัดการการตายและจับเวลาเกิดใหม่
@@ -239,47 +269,6 @@ end)
 
 if LocalPlayer.Character then
     SetupDeathHandler(LocalPlayer.Character)
-end
-
--- ฟังก์ชันเลือกข้อมูลเควสตามสถานะ UI และเลเวลปัจจุบัน
-local function GetCurrentQuestInfo()
-    local questState = GetActiveQuestNameFromGui()
-    
-    if questState == "new1" then return QuestConfig.new1
-    elseif questState == "Lv50" then return QuestConfig.Lv50
-    elseif questState == "Lv150" then return QuestConfig.Lv150
-    elseif questState == "Lv250" then return QuestConfig.Lv250
-    elseif questState == "Lv350" then return QuestConfig.Lv350
-    elseif questState == "Lv400" then return QuestConfig.Lv400
-    elseif questState == "Lv450" then return QuestConfig.Lv450
-    elseif questState == "Lv500" then return QuestConfig.Lv500
-    elseif questState == "Lv550" then return QuestConfig.Lv550
-    elseif questState == "Lv600" then return QuestConfig.Lv600
-    elseif questState == "Lv700" then return QuestConfig.Lv700
-    elseif questState == "Lv800" then return QuestConfig.Lv800
-    elseif questState == "Lv900" then return QuestConfig.Lv900
-    elseif questState == "Lv1000" then return QuestConfig.Lv1000
-    elseif questState == "Lv1100" then return QuestConfig.Lv1100
-    end
-
-    local level = GetPlayerLevel()
-    
-    if level >= 1100 then return QuestConfig.Lv1100
-    elseif level >= 1000 then return QuestConfig.Lv1000
-    elseif level >= 900 then return QuestConfig.Lv900
-    elseif level >= 800 then return QuestConfig.Lv800
-    elseif level >= 700 then return QuestConfig.Lv700
-    elseif level >= 600 then return QuestConfig.Lv600
-    elseif level >= 550 then return QuestConfig.Lv550
-    elseif level >= 500 then return QuestConfig.Lv500
-    elseif level >= 450 then return QuestConfig.Lv450
-    elseif level >= 400 then return QuestConfig.Lv400
-    elseif level >= 350 then return QuestConfig.Lv350
-    elseif level >= 250 then return QuestConfig.Lv250
-    elseif level >= 150 then return QuestConfig.Lv150
-    elseif level >= 50 then return QuestConfig.Lv50
-    else return QuestConfig.new1
-    end
 end
 
 -- ====================================================================
@@ -428,7 +417,7 @@ task.spawn(function()
 end)
 
 -- ====================================================================
--- 📜 ลูปจัดการเควส (Smooth Fly มาอยู่ใต้จุดรับเควส)
+-- 📜 ลูปจัดการเควส (ตรวจสอบความถูกต้อง และบินไปรับเควสใหม่หากไม่ตรง)
 -- ====================================================================
 task.spawn(function()
     while true do
@@ -436,18 +425,25 @@ task.spawn(function()
         if not _G.SmoothHubConfig.AutoFarmLevelCCG then continue end
         if not isPlayerReadyToFarm then continue end
         
+        -- ถ้ามีเควสอยู่แล้วแต่ตรวจสอบพบว่าไม่ตรงกับเลเวล/เป้าหมาย ให้สละเควสทิ้งทันที
+        if HasActiveQuest() and not IsActiveQuestCorrect() then
+            AbandonCurrentQuest()
+            currentTarget = nil
+            task.wait(0.5)
+        end
+        
         local character = LocalPlayer.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        if rootPart and not HasActiveQuest() and not isDoingQuest then
+        if rootPart and (not HasActiveQuest() or not IsActiveQuestCorrect()) and not isDoingQuest then
             isDoingQuest = true
             
-            while not HasActiveQuest() and isPlayerReadyToFarm and _G.SmoothHubConfig.AutoFarmLevelCCG do
+            while (not HasActiveQuest() or not IsActiveQuestCorrect()) and isPlayerReadyToFarm and _G.SmoothHubConfig.AutoFarmLevelCCG do
                 local char = LocalPlayer.Character
                 local rp = char and char:FindFirstChild("HumanoidRootPart")
                 local questInfo = GetCurrentQuestInfo()
                 
-                if not rp then break end
+                if not rp or not questInfo then break end
                 
                 -- อยู่ต่ำกว่าจุดเควส 7 หน่วย ป้องกันตัวละครชนกันจนกระเด็น
                 local targetCFrame = questInfo.CFrame - Vector3.new(0, 7, 0)
@@ -505,7 +501,8 @@ task.spawn(function()
         local character = LocalPlayer.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        if rootPart and HasActiveQuest() and not isDoingQuest then
+        -- ต้องมีเควสและเควสต้องถูกต้องตรงกันเท่านั้น ถึงจะเริ่มบินไปตีมอน
+        if rootPart and HasActiveQuest() and IsActiveQuestCorrect() and not isDoingQuest then
             if currentTarget then
                 local currentHumanoid = currentTarget:FindFirstChildOfClass("Humanoid")
                 if not currentHumanoid or currentHumanoid.Health <= 0 or IsMonsterInsideSafeZoneFolder(currentTarget) then
@@ -679,8 +676,8 @@ task.spawn(function()
             end
 
             if _G.CCGStatusObj then
-                if not HasActiveQuest() then
-                    _G.CCGStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
+                if not HasActiveQuest() or not IsActiveQuestCorrect() then
+                    _G.CCGStatusObj.SetText("Syncing Right Quest...", Color3.fromRGB(255, 180, 50))
                 elseif not currentTarget then
                     _G.CCGStatusObj.SetText("Waiting/Hidden in Sky...", Color3.fromRGB(100, 200, 255))
                 else
