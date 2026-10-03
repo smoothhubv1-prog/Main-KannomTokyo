@@ -287,7 +287,7 @@ end)
 -- ระบบปิดหน้าต่าง Daily Rewards อัตโนมัติ
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.01)
         if _G.SmoothHubConfig.EnableFarmMonster then
             pcall(function()
                 local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
