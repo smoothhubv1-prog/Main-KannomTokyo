@@ -102,7 +102,7 @@ local QuestConfig = {
     }
 }
 
-local FLY_SPEED = 150
+local FLY_SPEED = 250
 local currentTarget = nil 
 local isDoingQuest = false
 local isPlayerReadyToFarm = false
@@ -421,7 +421,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.001)
         if not _G.SmoothHubConfig.AutoFarmLevelCCG then continue end
         if not isPlayerReadyToFarm then continue end
         
@@ -429,7 +429,7 @@ task.spawn(function()
         if HasActiveQuest() and not IsActiveQuestCorrect() then
             AbandonCurrentQuest()
             currentTarget = nil
-            task.wait(0.5)
+            task.wait(0.001)
         end
         
         local character = LocalPlayer.Character
@@ -477,10 +477,10 @@ task.spawn(function()
                     end)
                 end
                 
-                task.wait(0.01)
+                task.wait(0.02)
             end
             
-            task.wait(0.5)
+            task.wait(0.001)
             isDoingQuest = false
         end
     end
@@ -619,7 +619,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.1)
         pcall(function()
             if not _G.SmoothHubConfig.AutoFarmLevelCCG then
                 if _G.CCGStatusObj then
