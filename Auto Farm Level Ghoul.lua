@@ -478,10 +478,10 @@ task.spawn(function()
                     end)
                 end
                 
-                task.wait(1)
+                task.wait(0.03)
             end
             
-            task.wait(0.5)
+            task.wait(0.01)
             isDoingQuest = false
         end
     end
