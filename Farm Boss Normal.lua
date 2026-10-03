@@ -239,7 +239,7 @@ end)
 -- ระบบอัปเดตสถานะบอสบน UI (Boss Status)
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.5)
         pcall(function()
             if not _G.SmoothHubConfig.EnableAutoBoss then
                 if _G.BossStatusObj then
