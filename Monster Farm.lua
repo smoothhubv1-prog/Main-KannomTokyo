@@ -64,22 +64,7 @@ local function GetPlayerLevel()
     return success and level or 1
 end
 
--- ฟังก์ชันเช็กว่าปัจจุบันมีเควสแสดงอยู่บนหน้าจอ UI หรือไม่
-local function HasActiveQuest()
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if playerGui then
-        local hud = playerGui:FindFirstChild("HUD")
-        local questUi = hud and hud:FindFirstChild("Quest")
-        if questUi then
-            if questUi.Visible or #questUi:GetChildren() > 0 then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- ค้นหาข้อมูลเควสที่ตรงกับมอนสเตอร์ที่ผู้เล่นเลือกใน Dropdown
+-- ดึงรายชื่อมอนสเตอร์ทั้งหมดที่ผู้เล่นติ๊กเลือกไว้ใน UI
 local function GetSelectedMonsterNames()
     local selectedList = {}
     if _G.SmoothHubConfig.MonsterSelection and type(_G.SmoothHubConfig.MonsterSelection) == "table" then
@@ -94,19 +79,36 @@ local function GetSelectedMonsterNames()
     return selectedList
 end
 
+-- ฟังก์ชันค้นหาเควสที่ตรงกับมอนสเตอร์เป้าหมาย (เรียงจากลำดับขั้นเควสที่สูงกว่า หรือเช็กจากตัวที่กำลังเจอจริง)
 local function GetCurrentQuestInfo()
     local selectedMonsters = GetSelectedMonsterNames()
-    if #selectedMonsters > 0 then
-        local firstSelected = selectedMonsters[1]
+    
+    -- ถ้าระบบกำลังเล็งมอนสเตอร์ตัวไหนอยู่ ให้พยายามดึงเควสของมอนสเตอร์ตัวนั้นเป็นหลักทันที
+    if currentTarget and currentTarget.Name then
         for _, quest in ipairs(QuestConfig) do
             for _, mName in ipairs(quest.Names) do
-                if firstSelected:lower() == mName:lower() or firstSelected:lower():find(mName:lower()) then
+                if currentTarget.Name:lower() == mName:lower() or currentTarget.Name:lower():find(mName:lower()) then
                     return quest
                 end
             end
         end
     end
+
+    -- ถ้ายังไม่มีเป้าหมาย ให้เช็กจากรายชื่อที่เลือกไว้ (เลือกตัวที่อยู่ในลำดับเควสสูงที่สุดที่คุณติ๊กไว้)
+    if #selectedMonsters > 0 then
+        for i = #QuestConfig, 1, -1 do
+            local quest = QuestConfig[i]
+            for _, qName in ipairs(quest.Names) do
+                for _, sName in ipairs(selectedMonsters) do
+                    if sName:lower() == qName:lower() or sName:lower():find(qName:lower()) then
+                        return quest
+                    end
+                end
+            end
+        end
+    end
     
+    -- กรณีสำรอง อิงตามเลเวลผู้เล่น
     local level = GetPlayerLevel()
     for i = #QuestConfig, 1, -1 do
         if level >= (i - 1) * 100 then
@@ -114,6 +116,69 @@ local function GetCurrentQuestInfo()
         end
     end
     return QuestConfig[1]
+end
+
+-- ฟังก์ชันเช็กว่าปัจจุบันมีเควสแสดงอยู่บนหน้าจอ UI หรือไม่
+local function HasActiveQuest()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        local hud = playerGui:FindFirstChild("HUD")
+        local questUi = hud and hud:FindFirstChild("Quest")
+        if questUi then
+            if questUi.Visible or #questUi:GetChildren() > 0 then
+                local hasText = false
+                for _, desc in ipairs(questUi:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Text ~= "" and not desc.Text:lower():find("quest") then
+                        hasText = true
+                        break
+                    end
+                end
+                return hasText
+            end
+        end
+    end
+    return false
+end
+
+-- ฟังก์ชันตรวจสอบว่าเควสปัจจุบันบนหน้าจอตรงกับเป้าหมายหรือไม่
+local function IsActiveQuestCorrect()
+    local targetQuestInfo = GetCurrentQuestInfo()
+    if not targetQuestInfo then return true end
+
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        local hud = playerGui:FindFirstChild("HUD")
+        local questUi = hud and hud:FindFirstChild("Quest")
+        if questUi and questUi.Visible then
+            for _, desc in ipairs(questUi:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text ~= "" then
+                    local textLower = desc.Text:lower()
+                    for _, mName in ipairs(targetQuestInfo.Names) do
+                        if textLower:find(mName:lower()) then
+                            return true -- เควสตรงกันแล้ว
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false -- เควสไม่ตรง (เช่น ถือเควส 400 แต่จะไปตีมอน 450)
+end
+
+-- ฟังก์ชันยกเลิก/ลบเควสเก่าทิ้งผ่าน RemoteEvent
+local function AbandonCurrentQuest()
+    pcall(function()
+        local networkFolder = ReplicatedStorage:FindFirstChild("Network")
+        if networkFolder then
+            for _, remote in ipairs(networkFolder:GetChildren()) do
+                if remote:IsA("RemoteEvent") then
+                    remote:FireServer("AbandonQuest")
+                    remote:FireServer("RemoveQuest")
+                    remote:FireServer("CancelQuest")
+                end
+            end
+        end
+    end)
 end
 
 local function SetupDeathHandler(character)
@@ -166,7 +231,7 @@ local function IsMonsterInsideSafeZoneFolder(monsterObj)
     return false
 end
 
--- ค้นหามอนสเตอร์เป้าหมายที่ผู้เล่นเลือกฟาร์ม
+-- ค้นหามอนสเตอร์เป้าหมายที่ผู้เล่นเลือกฟาร์ม (อิงตามชื่อที่เลือกใน Dropdown)
 local function GetTargetMonster()
     local closestMonster = nil
     local shortestDistance = math.huge
@@ -219,7 +284,7 @@ task.spawn(function()
     end
 end)
 
--- 🎁 ระบบปิดหน้าต่าง Daily Rewards อัตโนมัติเมื่อเปิดใช้งานฟาร์ม
+-- ระบบปิดหน้าต่าง Daily Rewards อัตโนมัติ
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -241,7 +306,7 @@ task.spawn(function()
     end
 end)
 
--- ระบบสร้างและจัดการกรอบ RGB ให้ตัวละคร
+-- ระบบสร้างกรอบ RGB ให้ตัวละคร
 local rgbHighlight = nil
 task.spawn(function()
     while true do
@@ -269,20 +334,27 @@ task.spawn(function()
     end
 end)
 
--- 📜 ระบบบินไปรับเควสอัตโนมัติ (ทำงานเมื่อยังไม่มีเควส)
+-- ระบบบินไปรับเควสอัตโนมัติ (ตรวจสอบความถูกต้องของเควส ถือผิดอันจะทำการสละเควสแล้วไปรับใหม่)
 task.spawn(function()
     while true do
         task.wait(0.5)
         if not _G.SmoothHubConfig.EnableFarmMonster then continue end
         if not isPlayerReadyToFarm then continue end
         
+        -- ถ้ามีเควสอยู่แล้วแต่ตรวจพบว่าไม่ตรงกับเป้าหมาย ให้ยกเลิกทิ้งทันที
+        if HasActiveQuest() and not IsActiveQuestCorrect() then
+            AbandonCurrentQuest()
+            currentTarget = nil
+            task.wait(0.5)
+        end
+        
         local character = LocalPlayer.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        if rootPart and not HasActiveQuest() and not isDoingQuest then
+        if rootPart and (not HasActiveQuest() or not IsActiveQuestCorrect()) and not isDoingQuest then
             isDoingQuest = true
             
-            while not HasActiveQuest() and isPlayerReadyToFarm and _G.SmoothHubConfig.EnableFarmMonster do
+            while (not HasActiveQuest() or not IsActiveQuestCorrect()) and isPlayerReadyToFarm and _G.SmoothHubConfig.EnableFarmMonster do
                 local char = LocalPlayer.Character
                 local rp = char and char:FindFirstChild("HumanoidRootPart")
                 local questInfo = GetCurrentQuestInfo()
@@ -339,7 +411,8 @@ task.spawn(function()
         local character = LocalPlayer.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        if rootPart and HasActiveQuest() and not isDoingQuest then
+        -- ต้องมีเควสและเควสต้องถูกต้องตรงกันเท่านั้น ถึงจะเริ่มบินไปตีมอน
+        if rootPart and HasActiveQuest() and IsActiveQuestCorrect() and not isDoingQuest then
             if currentTarget then
                 local currentHumanoid = currentTarget:FindFirstChildOfClass("Humanoid")
                 if not currentHumanoid or currentHumanoid.Health <= 0 or IsMonsterInsideSafeZoneFolder(currentTarget) then
@@ -462,10 +535,10 @@ task.spawn(function()
             end
 
             if _G.MonsterStatusObj then
-                if not HasActiveQuest() then
-                    _G.MonsterStatusObj.SetText("Going to Quest...", Color3.fromRGB(255, 180, 50))
+                if not HasActiveQuest() or not IsActiveQuestCorrect() then
+                    _G.MonsterStatusObj.SetText("Syncing Right Quest...", Color3.fromRGB(255, 180, 50))
                 elseif currentTarget and currentTarget.Name then
-                    _G.MonsterStatusObj.SetText("Farming: " .. currentTarget.Name, Color3.fromRGB(40, 220, 100))
+                    _G.MonsterStatusObj.SetText("Farming: " + currentTarget.Name, Color3.fromRGB(40, 220, 100))
                 else
                     _G.MonsterStatusObj.SetText("Waiting/Hidden in Sky...", Color3.fromRGB(100, 200, 255))
                 end
