@@ -3037,7 +3037,7 @@ SmoothHub:CreateCategory("SETTINGS", 10)
 local AppearancePage = SmoothHub:CreatePage("rbxassetid://111557168477930", "Window | Ui", 11, "Window |Ui | Kanom Tokyo", false)
 local PlayerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Player", 12, "Player | Kanom Tokyo", false)
 local AdvancedPage = SmoothHub:CreatePage("rbxassetid://114046757018442", "Advanced System", 13, "Advanced | Kanom Tokyo", false)
-local ServerPage = SmoothHub:CreatePage("rbxassetid://6034818372", "Server", 14, "Server | Kanom Tokyo", false)
+local ServerPage = SmoothHub:CreatePage("rbxassetid://78265645664209", "Server", 14, "Server | Kanom Tokyo", false)
 
 -- 🎁 ระบบ Redeem Code
 MainFarmPage:CreateSection("🎁", "Redeem Code", "Redeem active promotional codes for rewards.")
