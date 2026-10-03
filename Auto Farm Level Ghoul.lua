@@ -323,7 +323,7 @@ end)
 -- ====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.1)
         if _G.SmoothHubConfig.AutoFarmLevelGhoul then
             pcall(function()
                 local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
